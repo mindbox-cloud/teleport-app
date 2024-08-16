@@ -25,9 +25,8 @@ import { assertUnreachable } from 'teleterm/ui/utils';
 import {
   PtyCommand,
   PtyProcessCreationStatus,
-  TshKubeLoginCommand,
   SshOptions,
-  WindowsPty,
+  TshKubeLoginCommand,
 } from '../types';
 
 import {
@@ -35,14 +34,9 @@ import {
   ResolveShellEnvTimeoutError,
 } from './resolveShellEnv';
 
-type PtyOptions = {
-  ssh: SshOptions;
-  windowsPty: Pick<WindowsPty, 'useConpty'>;
-};
-
 export async function buildPtyOptions(
   settings: RuntimeSettings,
-  options: PtyOptions,
+  sshOptions: SshOptions,
   cmd: PtyCommand
 ): Promise<{
   processOptions: PtyProcessOptions;
@@ -74,7 +68,7 @@ export async function buildPtyOptions(
       return {
         processOptions: getPtyProcessOptions(
           settings,
-          options,
+          sshOptions,
           cmd,
           combinedEnv
         ),
@@ -85,12 +79,10 @@ export async function buildPtyOptions(
 
 export function getPtyProcessOptions(
   settings: RuntimeSettings,
-  options: PtyOptions,
+  sshOptions: SshOptions,
   cmd: PtyCommand,
   env: typeof process.env
 ): PtyProcessOptions {
-  const useConpty = options.windowsPty?.useConpty;
-
   switch (cmd.kind) {
     case 'pty.shell': {
       // Teleport Connect bundles a tsh binary, but the user might have one already on their system.
@@ -112,7 +104,6 @@ export function getPtyProcessOptions(
         cwd: cmd.cwd,
         env: { ...env, ...cmd.env },
         initMessage: cmd.initMessage,
-        useConpty,
       };
     }
 
@@ -138,7 +129,6 @@ export function getPtyProcessOptions(
         path: settings.defaultShell,
         args: isWindows ? powershellCommandArgs : bashCommandArgs,
         env: { ...env, KUBECONFIG: getKubeConfigFilePath(cmd, settings) },
-        useConpty,
       };
     }
 
@@ -150,7 +140,7 @@ export function getPtyProcessOptions(
       const args = [
         `--proxy=${cmd.rootClusterId}`,
         'ssh',
-        ...(options.ssh.noResume ? ['--no-resume'] : []),
+        ...(sshOptions.noResume ? ['--no-resume'] : []),
         '--forward-agent',
         loginHost,
       ];
@@ -159,7 +149,6 @@ export function getPtyProcessOptions(
         path: settings.tshd.binaryPath,
         args,
         env,
-        useConpty,
       };
     }
 
@@ -170,7 +159,6 @@ export function getPtyProcessOptions(
         path: cmd.path,
         args: cmd.args,
         env: { ...env, ...cmd.env },
-        useConpty,
       };
     }
 

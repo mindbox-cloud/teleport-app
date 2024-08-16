@@ -124,19 +124,12 @@ func (h *Handler) UploadPart(ctx context.Context, upload events.StreamUpload, pa
 	}
 
 	// Rename reservation to part file.
-	partPath := h.partPath(upload, partNumber)
-	err = os.Rename(reservationPath, partPath)
+	err = os.Rename(reservationPath, h.partPath(upload, partNumber))
 	if err != nil {
 		return nil, trace.ConvertSystemError(err)
 	}
 
-	var lastModified time.Time
-	fi, err := os.Stat(partPath)
-	if err == nil {
-		lastModified = fi.ModTime()
-	}
-
-	return &events.StreamPart{Number: partNumber, LastModified: lastModified}, nil
+	return &events.StreamPart{Number: partNumber}, nil
 }
 
 // CompleteUpload completes the upload
@@ -261,8 +254,7 @@ func (h *Handler) ListParts(ctx context.Context, upload events.StreamUpload) ([]
 			return nil
 		}
 		parts = append(parts, events.StreamPart{
-			Number:       part,
-			LastModified: info.ModTime(),
+			Number: part,
 		})
 		return nil
 	})

@@ -67,7 +67,7 @@ function DiscoverContent() {
     <>
       <FeatureBox>
         {hasSelectedResource && (
-          <Box mt={2} mb={6}>
+          <Box mt={2} mb={7}>
             <Navigation
               currentStep={currentStep}
               views={indexedViews}
@@ -98,6 +98,11 @@ function DiscoverContent() {
   );
 }
 
+export type DiscoverComponentProps = {
+  eViewConfigs?: EViewConfigs;
+  updateFlow?: DiscoverUpdateProps;
+};
+
 export function DiscoverComponent({
   eViewConfigs = [],
   updateFlow,
@@ -117,8 +122,3 @@ export function DiscoverComponent({
 export function Discover() {
   return <DiscoverComponent />;
 }
-
-export type DiscoverComponentProps = {
-  eViewConfigs?: EViewConfigs;
-  updateFlow?: DiscoverUpdateProps;
-};

@@ -35,7 +35,6 @@ import (
 	"github.com/gravitational/trace"
 
 	eastypes "github.com/gravitational/teleport/api/types/externalauditstorage"
-	"github.com/gravitational/teleport/lib/integrations/awsoidc/tags"
 	awsutil "github.com/gravitational/teleport/lib/utils/aws"
 )
 
@@ -54,9 +53,6 @@ type BootstrapInfraParams struct {
 
 	Spec   *eastypes.ExternalAuditStorageSpec
 	Region string
-
-	ClusterName     string
-	IntegrationName string
 }
 
 // BootstrapAthenaClient is a subset of [athena.Client] methods needed for athena bootstrap.
@@ -85,8 +81,6 @@ type BootstrapS3Client interface {
 	PutBucketVersioning(ctx context.Context, params *s3.PutBucketVersioningInput, optFns ...func(*s3.Options)) (*s3.PutBucketVersioningOutput, error)
 	// Creates a new lifecycle configuration for the bucket or replaces an existing lifecycle configuration.
 	PutBucketLifecycleConfiguration(ctx context.Context, params *s3.PutBucketLifecycleConfigurationInput, optFns ...func(*s3.Options)) (*s3.PutBucketLifecycleConfigurationOutput, error)
-	// Adds tags to a bucket.
-	PutBucketTagging(ctx context.Context, params *s3.PutBucketTaggingInput, optFns ...func(*s3.Options)) (*s3.PutBucketTaggingOutput, error)
 }
 
 // BootstrapInfra bootstraps External Audit Storage infrastructure.
@@ -104,10 +98,6 @@ func BootstrapInfra(ctx context.Context, params BootstrapInfraParams) error {
 		return trace.BadParameter("param S3 required")
 	case params.Region == "":
 		return trace.BadParameter("param Region required")
-	case params.ClusterName == "":
-		return trace.BadParameter("param Cluster Name required")
-	case params.IntegrationName == "":
-		return trace.BadParameter("param Integration Name required")
 	case params.Spec == nil:
 		return trace.BadParameter("param Spec required")
 	}
@@ -117,23 +107,19 @@ func BootstrapInfra(ctx context.Context, params BootstrapInfraParams) error {
 		return trace.Wrap(err)
 	}
 
-	ownershipTags := tags.DefaultResourceCreationTags(params.ClusterName, params.IntegrationName)
-	s3OwnershipTags := ownershipTags.ToS3Tags()
-
-	if err := createLTSBucket(ctx, params.S3, ltsBucket, params.Region, s3OwnershipTags); err != nil {
+	if err := createLTSBucket(ctx, params.S3, ltsBucket, params.Region); err != nil {
 		return trace.Wrap(err)
 	}
 
-	if err := createTransientBucket(ctx, params.S3, transientBucket, params.Region, s3OwnershipTags); err != nil {
+	if err := createTransientBucket(ctx, params.S3, transientBucket, params.Region); err != nil {
 		return trace.Wrap(err)
 	}
 
-	athenaOwnershipTags := ownershipTags.ToAthenaTags()
-	if err := createAthenaWorkgroup(ctx, params.Athena, params.Spec.AthenaWorkgroup, athenaOwnershipTags); err != nil {
+	if err := createAthenaWorkgroup(ctx, params.Athena, params.Spec.AthenaWorkgroup); err != nil {
 		return trace.Wrap(err)
 	}
 
-	if err := createGlueInfra(ctx, params.Glue, params.Region, params.Spec.GlueTable, params.Spec.GlueDatabase, ltsBucket, ownershipTags.ToMap()); err != nil {
+	if err := createGlueInfra(ctx, params.Glue, params.Spec.GlueTable, params.Spec.GlueDatabase, ltsBucket); err != nil {
 		return trace.Wrap(err)
 	}
 
@@ -146,15 +132,11 @@ func BootstrapInfra(ctx context.Context, params BootstrapInfraParams) error {
 // * Object locking enabled with Governance mode and default retention of 4 years
 // * Object ownership set to BucketOwnerEnforced
 // * Default SSE-S3 encryption
-func createLTSBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string, ownershipTags []s3types.Tag) error {
+func createLTSBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string) error {
 	fmt.Printf("Creating long term storage S3 bucket %s\n", bucketName)
-	err := ensureBucket(ctx, clt, bucketName, region, true)
-	if err != nil {
-		return trace.Wrap(err, "creating transient S3 bucket")
-	}
-
-	if err := applyBucketProperties(ctx, clt, bucketName, ownershipTags); err != nil {
-		return trace.Wrap(err, "applying S3 bucket properties")
+	err := createBucket(ctx, clt, bucketName, region, true)
+	if err != nil && !trace.IsAlreadyExists(err) {
+		return trace.Wrap(err, "creating long term storage S3 bucket")
 	}
 
 	fmt.Printf("Applying object lock configuration to long term storage S3 bucket with default retention period of %d years\n", defaultObjectLockRetentionYears)
@@ -178,15 +160,11 @@ func createLTSBucket(ctx context.Context, clt BootstrapS3Client, bucketName stri
 // policy is created that cleans up transient storage:
 // * Query results expire after 1 day
 // * DeleteMarkers, NonCurrentVersions and IncompleteMultipartUploads are also removed
-func createTransientBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string, ownershipTags []s3types.Tag) error {
+func createTransientBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string) error {
 	fmt.Printf("Creating transient storage S3 bucket %s\n", bucketName)
-	err := ensureBucket(ctx, clt, bucketName, region, false)
-	if err != nil {
+	err := createBucket(ctx, clt, bucketName, region, false)
+	if err != nil && !trace.IsAlreadyExists(err) {
 		return trace.Wrap(err, "creating transient S3 bucket")
-	}
-
-	if err := applyBucketProperties(ctx, clt, bucketName, ownershipTags); err != nil {
-		return trace.Wrap(err, "applying S3 bucket properties")
 	}
 
 	fmt.Println("Applying bucket lifecycle configuration to transient storage S3 bucket")
@@ -224,7 +202,7 @@ func createTransientBucket(ctx context.Context, clt BootstrapS3Client, bucketNam
 	return trace.Wrap(awsutil.ConvertS3Error(err), "setting lifecycle configuration on S3 bucket")
 }
 
-func ensureBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string, objectLock bool) error {
+func createBucket(ctx context.Context, clt BootstrapS3Client, bucketName string, region string, objectLock bool) error {
 	_, err := clt.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket:                     &bucketName,
 		CreateBucketConfiguration:  awsutil.CreateBucketConfiguration(region),
@@ -232,48 +210,25 @@ func ensureBucket(ctx context.Context, clt BootstrapS3Client, bucketName string,
 		ACL:                        s3types.BucketCannedACLPrivate,
 		ObjectOwnership:            s3types.ObjectOwnershipBucketOwnerEnforced,
 	})
-	convertedErr := awsutil.ConvertS3Error(err)
-	switch {
-	case convertedErr == nil:
-		return nil
-	case trace.IsAlreadyExists(convertedErr):
-		return nil
-	default:
-		return trace.Wrap(convertedErr)
-	}
-}
-
-func applyBucketProperties(ctx context.Context, clt BootstrapS3Client, bucketName string, ownershipTags []s3types.Tag) error {
-	// s3:CreateBucket doesn't support tags, so the best we can do is
-	// to tag the bucket shortly after creating it
-	fmt.Printf("Adding tags to S3 bucket %s\n", bucketName)
-	if _, err := clt.PutBucketTagging(ctx, &s3.PutBucketTaggingInput{
-		Bucket:  &bucketName,
-		Tagging: &s3types.Tagging{TagSet: ownershipTags},
-	}); err != nil {
+	if err != nil {
 		return trace.Wrap(awsutil.ConvertS3Error(err))
 	}
 
-	fmt.Printf("Enabling Bucket versioning to S3 bucket %s\n", bucketName)
-	if _, err := clt.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+	_, err = clt.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
 		Bucket: &bucketName,
 		VersioningConfiguration: &s3types.VersioningConfiguration{
 			Status: s3types.BucketVersioningStatusEnabled,
 		},
-	}); err != nil {
-		return trace.Wrap(awsutil.ConvertS3Error(err), "setting versioning configuration on S3 bucket")
-	}
-
-	return nil
+	})
+	return trace.Wrap(awsutil.ConvertS3Error(err), "setting versioning configuration on S3 bucket")
 }
 
 // createAthenaWorkgroup creates an athena workgroup in which to run athena sql queries.
-func createAthenaWorkgroup(ctx context.Context, clt BootstrapAthenaClient, workgroup string, ownershipTags []athenatypes.Tag) error {
+func createAthenaWorkgroup(ctx context.Context, clt BootstrapAthenaClient, workgroup string) error {
 	fmt.Printf("Creating Athena workgroup %s\n", workgroup)
 	_, err := clt.CreateWorkGroup(ctx, &athena.CreateWorkGroupInput{
 		Name:          &workgroup,
 		Configuration: &athenatypes.WorkGroupConfiguration{},
-		Tags:          ownershipTags,
 	})
 	if err != nil && !strings.Contains(err.Error(), "is already created") {
 		return trace.Wrap(err, "creating Athena workgroup")
@@ -288,14 +243,13 @@ func createAthenaWorkgroup(ctx context.Context, clt BootstrapAthenaClient, workg
 // * CreateDatabase
 // * CreateTable
 // * UpdateTable
-func createGlueInfra(ctx context.Context, clt BootstrapGlueClient, region, table, database, eventBucket string, ownershipTags map[string]string) error {
+func createGlueInfra(ctx context.Context, clt BootstrapGlueClient, table, database, eventBucket string) error {
 	fmt.Printf("Creating Glue database %s\n", database)
 	_, err := clt.CreateDatabase(ctx, &glue.CreateDatabaseInput{
 		DatabaseInput: &gluetypes.DatabaseInput{
 			Name:        &database,
 			Description: aws.String(glueDatabaseDescription),
 		},
-		Tags: ownershipTags,
 	})
 	if err != nil {
 		var aee *gluetypes.AlreadyExistsException

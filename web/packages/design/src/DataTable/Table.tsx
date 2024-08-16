@@ -18,7 +18,7 @@
 
 import React from 'react';
 
-import { Box, Flex, Indicator, P1, Text } from 'design';
+import { Box, Flex, Indicator, Text } from 'design';
 import * as Icons from 'design/Icon';
 
 import { StyledTable, StyledPanel } from './StyledTable';
@@ -373,7 +373,7 @@ const EmptyIndicator = ({
           justifyContent="center"
         >
           <Flex
-            gap={3}
+            gap={2}
             flexWrap="nowrap"
             alignItems="flex-start"
             justifyContent="center"
@@ -387,12 +387,26 @@ const EmptyIndicator = ({
                 height: 32px;
               `}
             />
-            <Text textAlign="center" typography="h1" m="0" color="text.main">
+            <Text
+              textAlign="center"
+              typography="paragraph"
+              m="0"
+              color="text.main"
+            >
               {emptyText}
             </Text>
           </Flex>
 
-          {emptyHint && <P1 textAlign="center">{emptyHint}</P1>}
+          {emptyHint && (
+            <Text
+              textAlign="center"
+              typography="paragraph"
+              m="0"
+              color="text.main"
+            >
+              {emptyHint}
+            </Text>
+          )}
 
           {emptyButton}
         </Flex>

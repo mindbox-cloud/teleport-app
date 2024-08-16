@@ -70,7 +70,6 @@ import (
 	"github.com/gravitational/teleport/api/utils/keypaths"
 	"github.com/gravitational/teleport/api/utils/keys"
 	"github.com/gravitational/teleport/api/utils/prompt"
-	"github.com/gravitational/teleport/entitlements"
 	"github.com/gravitational/teleport/integration/kube"
 	"github.com/gravitational/teleport/lib"
 	"github.com/gravitational/teleport/lib/auth"
@@ -228,11 +227,9 @@ func (p *cliModules) PrintVersion() {
 // Features returns supported features
 func (p *cliModules) Features() modules.Features {
 	return modules.Features{
-		Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-			entitlements.K8s: {Enabled: true},
-			entitlements.DB:  {Enabled: true},
-			entitlements.App: {Enabled: true},
-		},
+		Kubernetes:              true,
+		DB:                      true,
+		App:                     true,
 		AdvancedAccessWorkflows: true,
 		AccessControls:          true,
 	}
@@ -2976,7 +2973,7 @@ func TestEnvFlags(t *testing.T) {
 func TestKubeConfigUpdate(t *testing.T) {
 	t.Parallel()
 	// don't need real creds for this test, just something to compare against
-	creds := &client.KeyRing{KeyIndex: client.KeyIndex{ProxyHost: "a.example.com"}}
+	creds := &client.Key{KeyIndex: client.KeyIndex{ProxyHost: "a.example.com"}}
 	tests := []struct {
 		desc           string
 		cf             *CLIConf
@@ -3883,8 +3880,7 @@ func TestSerializeDatabases(t *testing.T) {
         "memorydb": {},
         "opensearch": {},
         "rdsproxy": {},
-        "redshift_serverless": {},
-        "docdb": {}
+        "redshift_serverless": {}
       },
       "mysql": {},
       "oracle": {
@@ -3916,8 +3912,7 @@ func TestSerializeDatabases(t *testing.T) {
         "memorydb": {},
         "opensearch": {},
         "rdsproxy": {},
-        "redshift_serverless": {},
-        "docdb": {}
+        "redshift_serverless": {}
       },
       "azure": {
 	    "redis": {}
@@ -5369,7 +5364,7 @@ func TestLogout(t *testing.T) {
 	require.NoError(t, err)
 	privateKey, err := keys.NewPrivateKey(key, privPEM)
 	require.NoError(t, err)
-	clientKey := &client.KeyRing{
+	clientKey := &client.Key{
 		KeyIndex: client.KeyIndex{
 			ProxyHost:   "proxy",
 			Username:    "user",

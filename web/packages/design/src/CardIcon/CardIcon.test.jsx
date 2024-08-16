@@ -20,9 +20,9 @@ import React from 'react';
 
 import { render } from 'design/utils/testing';
 
-import { WithIcon } from './CardIcon.story';
+import { Cards } from './CardIcon.story';
 
 test('rendering of CardIcon components', () => {
-  const { container } = render(<WithIcon />);
+  const { container } = render(<Cards />);
   expect(container.firstChild).toMatchSnapshot();
 });

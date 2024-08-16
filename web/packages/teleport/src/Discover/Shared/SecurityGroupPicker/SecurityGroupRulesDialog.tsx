@@ -19,7 +19,7 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import { ButtonSecondary, H2 } from 'design';
+import { Text, ButtonSecondary } from 'design';
 import Table, { Cell } from 'design/DataTable';
 import Dialog, { DialogContent, DialogFooter } from 'design/DialogConfirmation';
 
@@ -43,10 +43,10 @@ export function SecurityGroupRulesDialog({
         mb={0}
         textAlign="center"
       >
-        <H2 mb={4}>
+        <Text mb={4} typography="h4">
           {ruleType === 'inbound' ? 'Inbound' : 'Outbound'} Rules for [{sg.name}
           ]
-        </H2>
+        </Text>
         <StyledTable
           data={data}
           columns={[

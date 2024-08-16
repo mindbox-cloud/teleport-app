@@ -860,7 +860,6 @@ func shouldUseSystemCertPool(database types.Database) bool {
 	if database.GetTLS().TrustSystemCertPool {
 		return true
 	}
-
 	switch database.GetType() {
 	// Azure databases either use Baltimore Root CA or DigiCert Global Root G2.
 	//

@@ -201,7 +201,7 @@ function Reviewers({
         `}
       >
         <Text
-          typography="body3"
+          typography="body2"
           bold
           style={{ whiteSpace: 'nowrap', maxWidth: '200px' }}
           title={reviewer.value}
@@ -242,8 +242,8 @@ function Reviewers({
           border-color: ${props => props.theme.colors.spotBackground[1]};
         `}
       >
-        <Flex alignItems="baseline">
-          <Text mr={2} typography="body3">
+        <Flex>
+          <Text mr={2} fontSize={1}>
             Reviewers (optional)
           </Text>
           <ButtonBorder

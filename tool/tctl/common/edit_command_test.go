@@ -31,7 +31,6 @@ import (
 
 	"github.com/gravitational/teleport/api/constants"
 	"github.com/gravitational/teleport/api/types"
-	"github.com/gravitational/teleport/entitlements"
 	"github.com/gravitational/teleport/lib/auth/authclient"
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/modules"
@@ -334,10 +333,8 @@ func TestEditEnterpriseResources(t *testing.T) {
 	modules.SetTestModules(t, &modules.TestModules{
 		TestBuildType: modules.BuildEnterprise,
 		TestFeatures: modules.Features{
-			Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-				entitlements.OIDC: {Enabled: true},
-				entitlements.SAML: {Enabled: true},
-			},
+			OIDC: true,
+			SAML: true,
 		},
 	})
 	log := utils.NewSlogLoggerForTests()

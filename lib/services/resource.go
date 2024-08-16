@@ -223,8 +223,6 @@ func ParseShortcut(in string) (string, error) {
 		return types.KindServerInfo, nil
 	case types.KindBot, "bots":
 		return types.KindBot, nil
-	case types.KindBotInstance, types.KindBotInstance + "s":
-		return types.KindBotInstance, nil
 	case types.KindDatabaseObjectImportRule, "db_object_import_rules", "database_object_import_rule":
 		return types.KindDatabaseObjectImportRule, nil
 	case types.KindAccessMonitoringRule:
@@ -239,8 +237,6 @@ func ParseShortcut(in string) (string, error) {
 		return types.KindAccessRequest, nil
 	case types.KindPlugin, types.KindPlugin + "s":
 		return types.KindPlugin, nil
-	case types.KindAccessGraphSettings, "ags":
-		return types.KindAccessGraphSettings, nil
 	}
 	return "", trace.BadParameter("unsupported resource: %q - resources should be expressed as 'type/name', for example 'connector/github'", in)
 }

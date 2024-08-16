@@ -139,10 +139,8 @@ export const DeviceTrustConnectPassthrough = ({
 const SkipAuthNotice = styled(Box)`
   text-align: center;
   width: 100%;
-  @media (min-height: 500px) {
-    position: absolute;
-    bottom: 24px;
-  }
+  position: absolute;
+  bottom: 24px;
 `;
 
 const DownloadButton = styled(ButtonLink)`
@@ -158,5 +156,5 @@ const BoldText = styled.span`
 const Wrapper = styled(Box)`
   text-align: center;
   line-height: 32px;
-  padding-top: 5vh;
+  padding-top: 200px;
 `;

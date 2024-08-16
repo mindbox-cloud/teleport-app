@@ -1829,10 +1829,7 @@ func (r *RoleV6) GetLabelMatchers(rct RoleConditionType, kind string) (LabelMatc
 		return LabelMatchers{cond.NodeLabels, cond.NodeLabelsExpression}, nil
 	case KindKubernetesCluster:
 		return LabelMatchers{cond.KubernetesLabels, cond.KubernetesLabelsExpression}, nil
-	case KindApp, KindSAMLIdPServiceProvider:
-		// app_labels will be applied to both app and saml_idp_service_provider resources.
-		// Access to the saml_idp_service_provider can be controlled by the both
-		// app_labels and verbs targeting saml_idp_service_provider resource.
+	case KindApp:
 		return LabelMatchers{cond.AppLabels, cond.AppLabelsExpression}, nil
 	case KindDatabase:
 		return LabelMatchers{cond.DatabaseLabels, cond.DatabaseLabelsExpression}, nil
@@ -1870,10 +1867,7 @@ func (r *RoleV6) SetLabelMatchers(rct RoleConditionType, kind string, labelMatch
 		cond.KubernetesLabels = labelMatchers.Labels
 		cond.KubernetesLabelsExpression = labelMatchers.Expression
 		return nil
-	case KindApp, KindSAMLIdPServiceProvider:
-		// app_labels will be applied to both app and saml_idp_service_provider resources.
-		// Access to the saml_idp_service_provider can be controlled by the both
-		// app_labels and verbs targeting saml_idp_service_provider resource.
+	case KindApp:
 		cond.AppLabels = labelMatchers.Labels
 		cond.AppLabelsExpression = labelMatchers.Expression
 		return nil

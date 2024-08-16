@@ -19,7 +19,6 @@
 package dbcmd
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -323,7 +322,6 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			name:         "mongodb (legacy)",
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
-			opts:         []ConnectCommandFunc{withMongoDBAtlasDatabase()},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{
 					"mongo": []byte("legacy"),
@@ -340,7 +338,7 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			name:         "mongodb no TLS (legacy)",
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
-			opts:         []ConnectCommandFunc{WithNoTLS(), withMongoDBAtlasDatabase()},
+			opts:         []ConnectCommandFunc{WithNoTLS()},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{
 					"mongo": []byte("legacy"),
@@ -355,7 +353,6 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			name:         "mongosh no CA",
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
-			opts:         []ConnectCommandFunc{withMongoDBAtlasDatabase()},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{
 					"mongosh": []byte("1.1.6"),
@@ -373,9 +370,7 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
 			opts: []ConnectCommandFunc{
-				WithLocalProxy("localhost", 12345, "/tmp/keys/example.com/cas/example.com.pem"),
-				withMongoDBAtlasDatabase(),
-			},
+				WithLocalProxy("localhost", 12345, "/tmp/keys/example.com/cas/example.com.pem")},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{
 					"mongosh": []byte("1.1.6"),
@@ -392,7 +387,7 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			name:         "mongosh no TLS",
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
-			opts:         []ConnectCommandFunc{WithNoTLS(), withMongoDBAtlasDatabase()},
+			opts:         []ConnectCommandFunc{WithNoTLS()},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{
 					"mongosh": []byte("1.1.6"),
@@ -406,46 +401,13 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 			name:         "mongosh preferred",
 			dbProtocol:   defaults.ProtocolMongoDB,
 			databaseName: "mydb",
-			opts:         []ConnectCommandFunc{WithNoTLS(), withMongoDBAtlasDatabase()},
+			opts:         []ConnectCommandFunc{WithNoTLS()},
 			execer: &fakeExec{
 				execOutput: map[string][]byte{}, // Cannot find either bin.
 			},
 			cmd: []string{"mongosh",
 				"mongodb://localhost:12345/mydb?serverSelectionTimeoutMS=5000",
 			},
-		},
-		{
-			name:         "DocumentDB",
-			dbProtocol:   defaults.ProtocolMongoDB,
-			databaseName: "docdb",
-			opts:         []ConnectCommandFunc{WithNoTLS(), withDocumentDBDatabase()},
-			execer: &fakeExec{
-				execOutput: map[string][]byte{
-					// When both are available, legacy mongo is preferred.
-					"mongo":   []byte("legacy"),
-					"mongosh": []byte("1.1.6"),
-				},
-			},
-			cmd: []string{"mongo",
-				"mongodb://localhost:12345/docdb?serverSelectionTimeoutMS=5000",
-			},
-			wantErr: false,
-		},
-		{
-			name:         "DocumentDB mongosh",
-			dbProtocol:   defaults.ProtocolMongoDB,
-			databaseName: "docdb",
-			opts:         []ConnectCommandFunc{WithNoTLS(), withDocumentDBDatabase()},
-			execer: &fakeExec{
-				execOutput: map[string][]byte{
-					"mongosh": []byte("1.1.6"),
-				},
-			},
-			cmd: []string{"mongosh",
-				"mongodb://localhost:12345/docdb?serverSelectionTimeoutMS=5000",
-				"--retryWrites=false",
-			},
-			wantErr: false,
 		},
 		{
 			name:         "sqlserver",
@@ -787,7 +749,7 @@ func TestCLICommandBuilderGetConnectCommand(t *testing.T) {
 
 			c := NewCmdBuilder(tc, profile, database, "root", opts...)
 			c.uid = utils.NewFakeUID()
-			got, err := c.GetConnectCommand(context.Background())
+			got, err := c.GetConnectCommand()
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -951,7 +913,7 @@ func TestCLICommandBuilderGetConnectCommandAlternatives(t *testing.T) {
 			c := NewCmdBuilder(tc, profile, database, "root", opts...)
 			c.uid = utils.NewFakeUID()
 
-			commandOptions, err := c.GetConnectCommandAlternatives(context.Background())
+			commandOptions, err := c.GetConnectCommandAlternatives()
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -1039,7 +1001,7 @@ func TestConvertCommandError(t *testing.T) {
 			c := NewCmdBuilder(tc, profile, database, "root", opts...)
 			c.uid = utils.NewFakeUID()
 
-			cmd, err := c.GetConnectCommand(context.Background())
+			cmd, err := c.GetConnectCommand()
 			require.NoError(t, err)
 
 			// make sure the expected test bin is the command bin we got
@@ -1053,34 +1015,4 @@ func TestConvertCommandError(t *testing.T) {
 			require.ErrorContains(t, convertedErr, tt.wantStdErr)
 		})
 	}
-}
-
-func withMongoDBAtlasDatabase() ConnectCommandFunc {
-	return WithGetDatabaseFunc(func(context.Context, *client.TeleportClient, string) (types.Database, error) {
-		db, err := types.NewDatabaseV3(
-			types.Metadata{
-				Name: "mongodb-atlas",
-			},
-			types.DatabaseSpecV3{
-				Protocol: types.DatabaseProtocolMongoDB,
-				URI:      "mongodb+srv://my-cluster.abcdefy.mongodb.net",
-			},
-		)
-		return db, trace.Wrap(err)
-	})
-}
-
-func withDocumentDBDatabase() ConnectCommandFunc {
-	return WithGetDatabaseFunc(func(context.Context, *client.TeleportClient, string) (types.Database, error) {
-		db, err := types.NewDatabaseV3(
-			types.Metadata{
-				Name: "docdb",
-			},
-			types.DatabaseSpecV3{
-				Protocol: types.DatabaseProtocolMongoDB,
-				URI:      "my-documentdb-cluster-id.cluster-abcdefghijklmnop.us-east-1.docdb.amazonaws.com:27017",
-			},
-		)
-		return db, trace.Wrap(err)
-	})
 }

@@ -400,6 +400,7 @@ func TestValidateTrustedCluster(t *testing.T) {
 func newTestAuthServer(ctx context.Context, t *testing.T, name ...string) *Server {
 	bk, err := memory.New(memory.Config{})
 	require.NoError(t, err)
+	t.Cleanup(func() { bk.Close() })
 
 	clusterName := "me.localhost"
 	if len(name) != 0 {
@@ -413,18 +414,12 @@ func newTestAuthServer(ctx context.Context, t *testing.T, name ...string) *Serve
 	authConfig := &InitConfig{
 		ClusterName:            clusterNameRes,
 		Backend:                bk,
-		VersionStorage:         NewFakeTeleportVersion(),
 		Authority:              authority.New(),
 		SkipPeriodicOperations: true,
 	}
 	a, err := NewServer(authConfig)
 	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		bk.Close()
-		a.Close()
-	})
-
+	t.Cleanup(func() { a.Close() })
 	require.NoError(t, a.SetClusterAuditConfig(ctx, types.DefaultClusterAuditConfig()))
 	_, err = a.UpsertClusterNetworkingConfig(ctx, types.DefaultClusterNetworkingConfig())
 	require.NoError(t, err)

@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import styled from 'styled-components';
 import { ButtonBorder, ButtonPrimary, ButtonSecondary } from 'design/Button';
 import { SortDir } from 'design/DataTable/types';
-import { Text, Flex, Toggle } from 'design';
+import { Text, Flex } from 'design';
 import Menu, { MenuItem } from 'design/Menu';
-import { CheckboxInput } from 'design/Checkbox';
+import { StyledCheckbox } from 'design/Checkbox';
 import {
   ArrowUp,
   ArrowDown,
@@ -123,7 +123,7 @@ export function FilterPanel({
     >
       <Flex gap={2}>
         <HoverTooltip tipContent={selected ? 'Deselect all' : 'Select all'}>
-          <CheckboxInput
+          <StyledCheckbox
             css={`
               // add extra margin so it aligns with the checkboxes of the resources
               margin-left: 19px;
@@ -267,7 +267,15 @@ const FilterTypesMenu = ({
   return (
     <Flex textAlign="center" alignItems="center">
       <HoverTooltip tipContent={'Filter by resource type'}>
-        <ButtonSecondary size="small" onClick={handleOpen}>
+        <ButtonSecondary
+          px={2}
+          css={`
+            border-color: ${props => props.theme.colors.spotBackground[0]};
+          `}
+          textTransform="none"
+          size="small"
+          onClick={handleOpen}
+        >
           Types{' '}
           {kindsFromParams.length > 0 ? `(${kindsFromParams.length})` : ''}
           <ChevronDown ml={2} size="small" color="text.slightlyMuted" />
@@ -315,7 +323,7 @@ const FilterTypesMenu = ({
         {kindOptions.map(kind => {
           const $checkbox = (
             <>
-              <CheckboxInput
+              <StyledCheckbox
                 type="checkbox"
                 name={kind.label}
                 disabled={kind.disabled}
@@ -438,6 +446,7 @@ const SortMenu: React.FC<SortMenuProps> = props => {
           onClick={onDirChange}
           textTransform="none"
           css={`
+            width: 0px; // remove extra width around the button icon
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
             border-color: ${props => props.theme.colors.spotBackground[2]};
@@ -503,6 +512,17 @@ function ViewModeSwitch({
   );
 }
 
+const options: { value: IncludedResourceMode; label: string }[] = [
+  {
+    value: 'accessible',
+    label: 'Available',
+  },
+  {
+    value: 'requestable',
+    label: 'Can be requested',
+  },
+];
+
 const IncludedResourcesSelector = ({
   onChange,
   availabilityFilter,
@@ -520,15 +540,29 @@ const IncludedResourcesSelector = ({
     setAnchorEl(null);
   };
 
-  function handleToggle() {
-    if (
-      availabilityFilter.mode === 'requestable' ||
-      availabilityFilter.mode === 'all'
-    ) {
-      onChange('accessible');
+  function applyFilter(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    handleClose();
+
+    const formData = new FormData(e.currentTarget);
+    const availabilityOptionsForm = formData.getAll('availabilityOptions');
+
+    if (availabilityOptionsForm.length === 0) {
+      onChange('none');
       return;
     }
-    onChange(availabilityFilter.canRequestAll ? 'all' : 'requestable');
+    if (availabilityOptionsForm.length === 2) {
+      onChange('all');
+      return;
+    }
+
+    onChange(availabilityOptionsForm.at(0) as IncludedResourceMode);
+  }
+
+  function isCheckboxPreSelected(option: IncludedResourceMode): boolean {
+    return (
+      availabilityFilter.mode === option || availabilityFilter.mode === 'all'
+    );
   }
 
   return (
@@ -543,17 +577,16 @@ const IncludedResourcesSelector = ({
           size="small"
           onClick={handleOpen}
         >
-          Access Requests
+          Availability
           <ChevronDown ml={2} size="small" color="text.slightlyMuted" />
-          {availabilityFilter.mode === 'accessible' && (
-            <FiltersExistIndicator />
-          )}
+          {availabilityFilter.canRequestAll === true &&
+            availabilityFilter.mode !== 'none' && <FiltersExistIndicator />}
         </ButtonSecondary>
       </HoverTooltip>
       <Menu
         popoverCss={() => `
           // TODO (avatus): fix popover component to calculate correct height/anchor
-          margin-top: 36px;
+          margin-top: 76px;
         `}
         transformOrigin={{
           vertical: 'top',
@@ -567,16 +600,35 @@ const IncludedResourcesSelector = ({
         open={Boolean(anchorEl)}
         onClose={handleClose}
       >
-        <AccessRequestsToggleItem>
-          <Text mr={2}>Show requestable resources</Text>
-          <Toggle
-            isToggled={
-              availabilityFilter.mode === 'requestable' ||
-              availabilityFilter.mode === 'all'
-            }
-            onToggle={handleToggle}
-          />
-        </AccessRequestsToggleItem>
+        <form onSubmit={applyFilter}>
+          {options.map(option => (
+            <MenuItem as="label" key={option.value} px={2}>
+              <StyledCheckbox
+                type={availabilityFilter.canRequestAll ? 'checkbox' : 'radio'}
+                name="availabilityOptions"
+                value={option.value}
+                defaultChecked={isCheckboxPreSelected(option.value)}
+              />
+              <Text ml={2} fontWeight={300} fontSize={2}>
+                {option.label}
+              </Text>
+            </MenuItem>
+          ))}
+          <Flex justifyContent="space-between" p={2} gap={2}>
+            <ButtonPrimary size="small" type="submit">
+              Apply Filter
+            </ButtonPrimary>
+            <ButtonSecondary
+              size="small"
+              css={`
+                background-color: transparent;
+              `}
+              onClick={handleClose}
+            >
+              Cancel
+            </ButtonSecondary>
+          </Flex>
+        </form>
       </Menu>
     </Flex>
   );
@@ -592,7 +644,7 @@ const ViewModeSwitchContainer = styled.div`
   .selected {
     background-color: ${props => props.theme.colors.spotBackground[1]};
 
-    &:hover {
+    :hover {
       background-color: ${props => props.theme.colors.spotBackground[1]};
     }
   }
@@ -610,7 +662,7 @@ const ViewModeSwitchButton = styled.button`
 
   background-color: transparent;
 
-  &:hover {
+  :hover {
     background-color: ${props => props.theme.colors.spotBackground[0]};
   }
 `;
@@ -624,18 +676,4 @@ const FiltersExistIndicator = styled.div`
   background-color: ${props => props.theme.colors.brand};
   border-radius: 50%;
   display: inline-block;
-`;
-
-const AccessRequestsToggleItem = styled.div`
-  min-height: 40px;
-  box-sizing: border-box;
-  padding-left: ${props => props.theme.space[2]}px;
-  padding-right: ${props => props.theme.space[2]}px;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  min-width: 140px;
-  overflow: hidden;
-  text-decoration: none;
-  white-space: nowrap;
 `;

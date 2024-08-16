@@ -28,7 +28,6 @@ export const ToolTipInfo: React.FC<
     muteIconColor?: boolean;
     sticky?: boolean;
     maxWidth?: number;
-    kind?: 'info' | 'warning';
   }>
 > = ({
   children,
@@ -36,7 +35,6 @@ export const ToolTipInfo: React.FC<
   muteIconColor,
   sticky = false,
   maxWidth = 350,
-  kind = 'info',
 }) => {
   const [anchorEl, setAnchorEl] = useState();
   const open = Boolean(anchorEl);
@@ -65,7 +63,7 @@ export const ToolTipInfo: React.FC<
         {...(trigger === 'hover' && triggerOnHoverProps)}
         {...(trigger === 'click' && triggerOnClickProps)}
         css={`
-          &:hover {
+          :hover {
             cursor: pointer;
           }
           vertical-align: middle;
@@ -73,12 +71,7 @@ export const ToolTipInfo: React.FC<
           height: 18px;
         `}
       >
-        {kind === 'info' && (
-          <InfoIcon $muteIconColor={muteIconColor} size="medium" />
-        )}
-        {kind === 'warning' && (
-          <WarningIcon $muteIconColor={muteIconColor} size="medium" />
-        )}
+        <InfoIcon $muteIconColor={muteIconColor} size="medium" />
       </span>
       <Popover
         modalCss={() =>
@@ -104,23 +97,14 @@ export const ToolTipInfo: React.FC<
   );
 };
 
-const StyledOnHover = styled(Text)<{ $maxWidth: number }>`
+const StyledOnHover = styled(Text)`
   color: ${props => props.theme.colors.text.main};
   background-color: ${props => props.theme.colors.tooltip.background};
   max-width: ${p => p.$maxWidth}px;
 `;
 
-const InfoIcon = styled(Icons.Info)<{ $muteIconColor?: boolean }>`
+const InfoIcon = styled(Icons.Info)`
   height: 18px;
   width: 18px;
   color: ${p => (p.$muteIconColor ? p.theme.colors.text.disabled : 'inherit')};
-`;
-
-const WarningIcon = styled(Icons.Warning)<{ $muteIconColor?: boolean }>`
-  height: 18px;
-  width: 18px;
-  color: ${p =>
-    p.$muteIconColor
-      ? p.theme.colors.text.disabled
-      : p.theme.colors.interactive.solid.alert.default.background};
 `;

@@ -40,7 +40,6 @@ import (
 	apidefaults "github.com/gravitational/teleport/api/defaults"
 	trustpb "github.com/gravitational/teleport/api/gen/proto/go/teleport/trust/v1"
 	"github.com/gravitational/teleport/api/types"
-	"github.com/gravitational/teleport/api/utils/keys"
 	"github.com/gravitational/teleport/lib/auth/authclient"
 	"github.com/gravitational/teleport/lib/auth/keygen"
 	"github.com/gravitational/teleport/lib/auth/windows"
@@ -364,7 +363,7 @@ func (a *AuthCommand) generateWindowsCert(ctx context.Context, clusterAPI certif
 
 	_, err = identityfile.Write(ctx, identityfile.WriteConfig{
 		OutputPath: a.output,
-		Key: &client.KeyRing{
+		Key: &client.Key{
 			// the godocs say the map key is the desktop server name,
 			// but in this case we're just generating a cert that's not
 			// specific to a particular desktop
@@ -508,7 +507,7 @@ func (a *AuthCommand) generateHostKeys(ctx context.Context, clusterAPI certifica
 	clusterName := cn.GetClusterName()
 
 	res, err := clusterAPI.TrustClient().GenerateHostCert(ctx, &trustpb.GenerateHostCertRequest{
-		Key:         key.PrivateKey.MarshalSSHPublicKey(),
+		Key:         key.MarshalSSHPublicKey(),
 		HostId:      "",
 		NodeName:    "",
 		Principals:  principals,
@@ -561,7 +560,7 @@ func (a *AuthCommand) generateDatabaseKeys(ctx context.Context, clusterAPI certi
 
 // generateDatabaseKeysForKey signs the provided unsigned key with Teleport CA
 // for database access.
-func (a *AuthCommand) generateDatabaseKeysForKey(ctx context.Context, clusterAPI certificateSigner, key *client.KeyRing) error {
+func (a *AuthCommand) generateDatabaseKeysForKey(ctx context.Context, clusterAPI certificateSigner, key *client.Key) error {
 	principals := strings.Split(a.genHost, ",")
 
 	dbCertReq := db.GenerateDatabaseCertificatesRequest{
@@ -851,8 +850,7 @@ func (a *AuthCommand) generateUserKeys(ctx context.Context, clusterAPI certifica
 		return trace.Wrap(err)
 	}
 
-	// Generate a keypair.
-	// TODO(nklaassen): support configurable key algorithms, split SSH and TLS keys.
+	// generate a keypair:
 	key, err := client.GenerateRSAKey()
 	if err != nil {
 		return trace.Wrap(err)
@@ -897,7 +895,6 @@ func (a *AuthCommand) generateUserKeys(ctx context.Context, clusterAPI certifica
 			Name:        a.appName,
 			PublicAddr:  server.GetApp().GetPublicAddr(),
 			ClusterName: a.leafCluster,
-			URI:         server.GetApp().GetURI(),
 		}
 
 		// TODO (Joerger): DELETE IN v17.0.0
@@ -922,17 +919,10 @@ func (a *AuthCommand) generateUserKeys(ctx context.Context, clusterAPI certifica
 		certUsage = proto.UserCertsRequest_Database
 	}
 
-	sshPublicKey := key.PrivateKey.MarshalSSHPublicKey()
-	tlsPublicKey, err := keys.MarshalPublicKey(key.PrivateKey.Public())
-	if err != nil {
-		return trace.Wrap(err)
-	}
-
 	reqExpiry := time.Now().UTC().Add(a.genTTL)
 	// Request signed certs from `auth` server.
 	certs, err := clusterAPI.GenerateUserCerts(ctx, proto.UserCertsRequest{
-		SSHPublicKey:      sshPublicKey,
-		TLSPublicKey:      tlsPublicKey,
+		PublicKey:         key.MarshalSSHPublicKey(),
 		Username:          a.genUser,
 		Expires:           reqExpiry,
 		Format:            certificateFormat,

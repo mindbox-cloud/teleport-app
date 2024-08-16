@@ -51,6 +51,7 @@ import {
 import cfg from 'teleport/config';
 
 import { ExternalAuditStorageOpType } from './Operations/useIntegrationOperation';
+import { UpdateAwsOidcThumbprint } from './UpdateAwsOidcThumbprint';
 
 type Props<IntegrationLike> = {
   list: IntegrationLike[];
@@ -196,6 +197,9 @@ const StatusCell = ({ item }: { item: IntegrationLike }) => {
         <Flex alignItems="center">
           <StatusLight status={status} />
           {getStatusCodeTitle(item.statusCode)}
+          <Box mx="1">
+            <UpdateAwsOidcThumbprint integration={item} />
+          </Box>
         </Flex>
       </Cell>
     );
@@ -250,7 +254,7 @@ function getStatus(item: IntegrationLike): Status | null {
   }
 }
 
-const StatusLight = styled(Box)<{ status: Status }>`
+const StatusLight = styled(Box)`
   border-radius: 50%;
   margin-right: 4px;
   width: 8px;

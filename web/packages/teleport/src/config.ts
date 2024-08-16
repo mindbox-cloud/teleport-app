@@ -22,8 +22,6 @@ import { IncludedResourceMode } from 'shared/components/UnifiedResources';
 
 import generateResourcePath from './generateResourcePath';
 
-import { defaultEntitlements } from './entitlement';
-
 import type {
   Auth2faType,
   AuthProvider,
@@ -40,7 +38,9 @@ import type { ParticipantMode } from 'teleport/services/session';
 import type { YamlSupportedResourceKind } from './services/yaml/types';
 
 const cfg = {
-  /** @deprecated Use cfg.edition instead. */
+  /**
+   * @deprecated use cfg.edition instead
+   */
   isEnterprise: false,
   edition: 'oss',
   isCloud: false,
@@ -60,22 +60,26 @@ const cfg = {
   isUsageBasedBilling: false,
   hideInaccessibleFeatures: false,
   customTheme: '',
-  /** @deprecated */
+  /**
+   * isTeam is true if [Features.ProductType] == Team
+   * @deprecated use other flags do determine cluster features istead of relying on isTeam
+   * TODO(mcbattirola): remove isTeam when it is no longer used
+   */
   isTeam: false,
   isStripeManaged: false,
   hasQuestionnaire: false,
   externalAuditStorage: false,
   premiumSupport: false,
   accessRequests: false,
-  /** @deprecated Use entitlements instead. */
   trustedDevices: false,
   oidc: false,
   saml: false,
-  /** @deprecated Use entitlements instead. */
   joinActiveSessions: false,
-  /** @deprecated Use entitlements instead. */
   mobileDeviceManagement: false,
-  /** @deprecated Use entitlements instead. */
+
+  // isIgsEnabled refers to Identity Governance & Security product.
+  // It refers to a group of features: access request, device trust,
+  // access list, and access monitoring.
   isIgsEnabled: false,
 
   // isPolicyEnabled refers to the Teleport Policy product
@@ -86,18 +90,13 @@ const cfg = {
   baseUrl: window.location.origin,
 
   // featureLimits define limits for features.
-  /** @deprecated Use entitlements instead. */
+  // Typically used with feature teasers if feature is not enabled for the
+  // product type eg: Team product contains teasers to upgrade to Enterprise.
   featureLimits: {
-    /** @deprecated Use entitlements instead. */
     accessListCreateLimit: 0,
-    /** @deprecated Use entitlements instead. */
     accessMonitoringMaxReportRangeLimit: 0,
-    /** @deprecated Use entitlements instead. */
     AccessRequestMonthlyRequestLimit: 0,
   },
-
-  // default entitlements to false
-  entitlements: defaultEntitlements,
 
   ui: {
     scrollbackLines: 1000,
@@ -139,7 +138,6 @@ const cfg = {
     accountPassword: '/web/account/password',
     accountMfaDevices: '/web/account/twofactor',
     roles: '/web/roles',
-    joinTokens: '/web/tokens',
     deviceTrust: `/web/devices`,
     deviceTrustAuthorize: '/web/device/authorize/:id?/:token?',
     sso: '/web/sso',
@@ -259,8 +257,6 @@ const cfg = {
     connectMyComputerLoginsPath: '/v1/webapi/connectmycomputer/logins',
 
     joinTokenPath: '/v1/webapi/token',
-    joinTokenYamlPath: '/v1/webapi/tokens/yaml',
-    joinTokensPath: '/v1/webapi/tokens',
     dbScriptPath: '/scripts/:token/install-database.sh',
     nodeScriptPath: '/scripts/:token/install-node.sh',
     appNodeScriptPath: '/scripts/:token/install-app.sh?name=:name&uri=:uri',
@@ -316,16 +312,12 @@ const cfg = {
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/deploydatabaseservices',
     awsRdsDbRequiredVpcsPath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/requireddatabasesvpcs',
-    awsDatabaseVpcsPath:
-      '/webapi/sites/:clusterId/integrations/aws-oidc/:name/databasevpcs',
     awsRdsDbListPath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/databases',
     awsDeployTeleportServicePath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/deployservice',
     awsSecurityGroupsListPath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/securitygroups',
-    awsSubnetListPath:
-      '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/subnets',
 
     awsAppAccessPath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/aws-app-access',
@@ -333,7 +325,7 @@ const cfg = {
       '/v1/webapi/scripts/integrations/configure/aws-app-access-iam.sh?role=:iamRoleName',
 
     awsConfigureIamEc2AutoDiscoverWithSsmPath:
-      '/v1/webapi/scripts/integrations/configure/ec2-ssm-iam.sh?role=:iamRoleName&awsRegion=:region&ssmDocument=:ssmDocument&integrationName=:integrationName',
+      '/v1/webapi/scripts/integrations/configure/ec2-ssm-iam.sh?role=:iamRoleName&awsRegion=:region&ssmDocument=:ssmDocument',
 
     eksClustersListPath:
       '/v1/webapi/sites/:clusterId/integrations/aws-oidc/:name/eksclusters',
@@ -458,6 +450,18 @@ const cfg = {
     return 'sso';
   },
 
+  // isLegacyEnterprise describes product that should have legacy support
+  // where certain features access remain unlimited. This was before
+  // product EUB (enterprise usage based) was introduced.
+  // eg: access request and device trust.
+  isLegacyEnterprise() {
+    return cfg.isEnterprise && !cfg.isUsageBasedBilling;
+  },
+
+  getAuthType() {
+    return cfg.auth.authType;
+  },
+
   getDeviceTrustAuthorizeRoute(id: string, token: string) {
     return generatePath(cfg.routes.deviceTrustAuthorize, { id, token });
   },
@@ -490,20 +494,8 @@ const cfg = {
     return generatePath(cfg.routes.desktops, { clusterId });
   },
 
-  getJoinTokensRoute() {
-    return cfg.routes.joinTokens;
-  },
-
-  getJoinTokensUrl() {
-    return cfg.api.joinTokensPath;
-  },
-
   getJoinTokenUrl() {
     return cfg.api.joinTokenPath;
-  },
-
-  getJoinTokenYamlUrl() {
-    return cfg.api.joinTokenYamlPath;
   },
 
   getNodeScriptUrl(token: string) {
@@ -520,7 +512,10 @@ const cfg = {
   },
 
   getAwsOidcConfigureIdpScriptUrl(p: UrlAwsOidcConfigureIdp) {
-    const path = cfg.api.awsConfigureIamScriptOidcIdpPath;
+    let path = cfg.api.awsConfigureIamScriptOidcIdpPath;
+    if (p.s3Bucket && p.s3Prefix) {
+      path += '&s3Bucket=:s3Bucket&s3Prefix=:s3Prefix';
+    }
     return cfg.baseUrl + generatePath(path, { ...p });
   },
 
@@ -914,13 +909,6 @@ const cfg = {
     });
   },
 
-  getAwsDatabaseVpcsUrl(integrationName: string, clusterId: string) {
-    return generatePath(cfg.api.awsDatabaseVpcsPath, {
-      clusterId,
-      name: integrationName,
-    });
-  },
-
   getAwsRdsDbsDeployServicesUrl(integrationName: string) {
     const clusterId = cfg.proxyCluster;
 
@@ -1020,13 +1008,6 @@ const cfg = {
     const clusterId = cfg.proxyCluster;
 
     return generatePath(cfg.api.awsSecurityGroupsListPath, {
-      clusterId,
-      name: integrationName,
-    });
-  },
-
-  getAwsSubnetListUrl(integrationName: string, clusterId: string) {
-    return generatePath(cfg.api.awsSubnetListPath, {
       clusterId,
       name: integrationName,
     });
@@ -1242,7 +1223,6 @@ export interface UrlAwsConfigureIamEc2AutoDiscoverWithSsmScriptParams {
   region: Regions;
   iamRoleName: string;
   ssmDocument: string;
-  integrationName: string;
 }
 
 export interface UrlGcpWorkforceConfigParam {

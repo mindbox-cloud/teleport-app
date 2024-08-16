@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"reflect"
 	"slices"
 	"strings"
@@ -1326,7 +1325,7 @@ func (s *session) trackSession(p *party, policySet []*types.SessionTrackerPolicy
 		SessionID:         s.id.String(),
 		Kind:              string(types.KubernetesSessionKind),
 		State:             types.SessionState_SessionStatePending,
-		Hostname:          path.Join(s.podNamespace, s.podName),
+		Hostname:          s.podName,
 		ClusterName:       s.ctx.teleportCluster.name,
 		KubernetesCluster: s.ctx.kubeClusterName,
 		HostUser:          p.Ctx.User.GetName(),
@@ -1363,7 +1362,7 @@ func (s *session) trackSession(p *party, policySet []*types.SessionTrackerPolicy
 	case err != nil:
 		return trace.Wrap(err)
 	// the tracker was created successfully
-	default:
+	case err == nil:
 		s.tracker = tracker
 	}
 

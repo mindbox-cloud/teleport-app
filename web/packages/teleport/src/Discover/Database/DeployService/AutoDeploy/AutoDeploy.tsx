@@ -18,14 +18,12 @@
 
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Box, ButtonSecondary, Link, Text, Mark, H3, Subtitle3 } from 'design';
+import { Box, ButtonSecondary, Link, Text, Mark } from 'design';
 import * as Icons from 'design/Icon';
 import FieldInput from 'shared/components/FieldInput';
 import Validation, { Validator } from 'shared/components/Validation';
 import useAttempt from 'shared/hooks/useAttemptNext';
 import { requiredIamRoleName } from 'shared/components/Validation/rules';
-
-import { P } from 'design/Text/Text';
 
 import { TextSelectCopyMulti } from 'teleport/components/TextSelectCopy';
 import { usePingTeleport } from 'teleport/Discover/Shared/PingTeleportContext';
@@ -42,7 +40,6 @@ import {
   DiscoverServiceDeployType,
 } from 'teleport/services/userEvent';
 import cfg from 'teleport/config';
-import { splitAwsIamArn } from 'teleport/services/integrations/aws';
 
 import {
   ActionButtons,
@@ -58,7 +55,6 @@ import { DeployServiceProp } from '../DeployService';
 import { hasMatchingLabels, Labels } from '../../common';
 
 import { SelectSecurityGroups } from './SelectSecurityGroups';
-import { SelectSubnetIds } from './SelectSubnetIds';
 
 import type { Database } from 'teleport/services/databases';
 
@@ -72,12 +68,6 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
   const [svcDeployedAwsUrl, setSvcDeployedAwsUrl] = useState('');
   const [deployFinished, setDeployFinished] = useState(false);
 
-  // TODO(lisa): look into using validator.Validate() instead
-  // of manually validating by hand.
-  const [hasNoSubnets, setHasNoSubnets] = useState(false);
-  const [hasNoSecurityGroups, setHasNoSecurityGroups] = useState(false);
-
-  const [selectedSubnetIds, setSelectedSubnetIds] = useState<string[]>([]);
   const [selectedSecurityGroups, setSelectedSecurityGroups] = useState<
     string[]
   >([]);
@@ -96,30 +86,8 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
     }
   }, [labels]);
 
-  function manuallyValidateRequiredFields() {
-    if (selectedSubnetIds.length === 0) {
-      setHasNoSubnets(true);
-      return false;
-    } else {
-      setHasNoSubnets(false);
-    }
-
-    if (selectedSecurityGroups.length === 0) {
-      setHasNoSecurityGroups(true);
-      return false;
-    } else {
-      setHasNoSecurityGroups(false);
-    }
-
-    return true; // valid
-  }
-
   function handleDeploy(validator) {
     if (!validator.validate()) {
-      return;
-    }
-
-    if (!manuallyValidateRequiredFields()) {
       return;
     }
 
@@ -128,17 +96,18 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
     if (wantAutoDiscover) {
       setAttempt({ status: 'processing' });
 
-      const { awsAccountId } = splitAwsIamArn(
-        agentMeta.awsIntegration.spec.roleArn
-      );
+      const requiredVpcsAndSubnets =
+        dbMeta.autoDiscovery.requiredVpcsAndSubnets;
+      const vpcIds = Object.keys(requiredVpcsAndSubnets);
+
       integrationService
         .deployDatabaseServices(integrationName, {
           region: dbMeta.awsRegion,
-          accountId: awsAccountId,
           taskRoleArn,
-          deployments: [
-            { vpcId: dbMeta.awsVpcId, subnetIds: selectedSubnetIds },
-          ],
+          deployments: vpcIds.map(vpcId => ({
+            vpcId,
+            subnetIds: requiredVpcsAndSubnets[vpcId],
+          })),
         })
         .then(url => {
           setAttempt({ status: 'success' });
@@ -162,7 +131,7 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
         .deployAwsOidcService(integrationName, {
           deploymentMode: 'database-service',
           region: dbMeta.awsRegion,
-          subnetIds: selectedSubnetIds,
+          subnetIds: dbMeta.selectedAwsRdsDb?.subnets,
           taskRoleArn,
           databaseAgentMatcherLabels: labels,
           securityGroups: selectedSecurityGroups,
@@ -173,9 +142,7 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
         // to get picked up by this service we deployed.
         // So setting the attempt here to "success"
         // is not necessary.
-        .then(url => {
-          setSvcDeployedAwsUrl(url);
-        })
+        .then(setSvcDeployedAwsUrl)
         .catch((err: Error) => {
           setAttempt({ status: 'failed', statusText: err.message });
           emitErrorEvent(`deploy request failed: ${err.message}`);
@@ -240,55 +207,41 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
               validator={validator}
             />
 
-            <StyledBox mb={5}>
-              <header>
-                <H3>Step 2</H3>
-              </header>
-              <SelectSubnetIds
-                selectedSubnetIds={selectedSubnetIds}
-                onSelectedSubnetIds={setSelectedSubnetIds}
-                dbMeta={dbMeta}
-                emitErrorEvent={emitErrorEvent}
-                disabled={isProcessing}
-              />
-            </StyledBox>
+            {/* step two & step three
+             * for auto discover, these steps are disabled atm since
+             * user's can't supply custom label matchers and selecting
+             * security groups is out of scope.
+             */}
+            {!wantAutoDiscover && (
+              <>
+                <StyledBox mb={5}>
+                  <Text bold>Step 2 (Optional)</Text>
+                  <Labels
+                    labels={labels}
+                    setLabels={setLabels}
+                    disableBtns={attempt.status === 'processing'}
+                    showLabelMatchErr={showLabelMatchErr}
+                    dbLabels={dbLabels}
+                    autoFocus={false}
+                    region={dbMeta.selectedAwsRdsDb?.region}
+                  />
+                </StyledBox>
+                {/* step three */}
+                <StyledBox mb={5}>
+                  <Text bold>Step 3 (Optional)</Text>
+                  <SelectSecurityGroups
+                    selectedSecurityGroups={selectedSecurityGroups}
+                    setSelectedSecurityGroups={setSelectedSecurityGroups}
+                    dbMeta={dbMeta}
+                    emitErrorEvent={emitErrorEvent}
+                  />
+                </StyledBox>
+              </>
+            )}
 
             <StyledBox mb={5}>
-              <header>
-                <H3>Step 3 (Optional)</H3>
-              </header>
-              <SelectSecurityGroups
-                selectedSecurityGroups={selectedSecurityGroups}
-                setSelectedSecurityGroups={setSelectedSecurityGroups}
-                dbMeta={dbMeta}
-                disabled={isProcessing}
-                emitErrorEvent={emitErrorEvent}
-              />
-            </StyledBox>
-
-            <StyledBox mb={5}>
-              <header>
-                <H3>Step 4 (Optional)</H3>
-                <Subtitle3 mb={2}>Define Matcher Labels</Subtitle3>
-              </header>
-              <Labels
-                labels={labels}
-                setLabels={setLabels}
-                disableBtns={attempt.status === 'processing'}
-                showLabelMatchErr={showLabelMatchErr}
-                dbLabels={dbLabels}
-                autoFocus={false}
-                region={dbMeta.selectedAwsRdsDb?.region}
-              />
-            </StyledBox>
-
-            <StyledBox mb={5}>
-              <header>
-                <H3>Step 5</H3>
-                <Subtitle3 mb={2}>
-                  Deploy the Teleport Database Service
-                </Subtitle3>
-              </header>
+              <Text bold>Step {wantAutoDiscover ? 2 : 4}</Text>
+              <Text mb={2}>Deploy the Teleport Database Service.</Text>
               <ButtonSecondary
                 width="215px"
                 type="submit"
@@ -302,7 +255,12 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
               {hasError && (
                 <Box>
                   <TextIcon mt={3}>
-                    <AlertIcon />
+                    <Icons.Warning
+                      size="medium"
+                      ml={1}
+                      mr={2}
+                      color="error.main"
+                    />
                     Encountered Error: {attempt.statusText}
                   </TextIcon>
                   <Text mt={2}>
@@ -328,19 +286,6 @@ export function AutoDeploy({ toggleDeployMethod }: DeployServiceProp) {
               <AutoDiscoverDeploySuccess
                 svcDeployedAwsUrl={svcDeployedAwsUrl}
               />
-            )}
-
-            {hasNoSubnets && selectedSubnetIds.length === 0 && (
-              <TextIcon mt={3}>
-                <AlertIcon />
-                At least one subnet selection is required
-              </TextIcon>
-            )}
-            {hasNoSecurityGroups && selectedSecurityGroups.length === 0 && (
-              <TextIcon mt={3}>
-                <AlertIcon />
-                At least one security group selection is required
-              </TextIcon>
             )}
 
             <ActionButtons
@@ -426,23 +371,26 @@ const CreateAccessRole = ({
 
   return (
     <StyledBox mb={5}>
-      <H3 mb={2}>Step 1</H3>
-      <P mb={2}>
-        Name an IAM role for the Teleport Database Service and generate a
-        configuration command. The generated command will create the role and
-        configure permissions for it in your AWS account.
-      </P>
+      <Text bold>Step 1</Text>
+      <Text mb={2}>
+        Name a Task Role ARN for this Database Service and generate a configure
+        command. This command will configure the required permissions in your
+        AWS account.
+      </Text>
       <FieldInput
         mb={4}
         disabled={disabled}
         rule={requiredIamRoleName}
-        label="Name an IAM role"
+        label="Name a Task Role ARN"
         autoFocus
         value={taskRoleArn}
         placeholder="TeleportDatabaseAccess"
         width="440px"
         mr="3"
         onChange={e => setTaskRoleArn(e.target.value)}
+        toolTipContent={`Amazon Resource Names (ARNs) uniquely identify AWS \
+        resources. In this case you will naming an IAM role that this \
+        deployed service will be using`}
       />
       <ButtonSecondary mb={3} onClick={generateAutoConfigScript}>
         {scriptUrl ? 'Regenerate Command' : 'Generate Command'}
@@ -571,7 +519,3 @@ const StyledBox = styled(Box)`
   padding: ${props => `${props.theme.space[3]}px`};
   border-radius: ${props => `${props.theme.space[2]}px`};
 `;
-
-const AlertIcon = () => (
-  <Icons.Warning size="medium" ml={1} mr={2} color="error.main" />
-);

@@ -136,7 +136,7 @@ func (b *EmbeddedBot) Start(ctx context.Context) error {
 	}
 }
 
-func (b *EmbeddedBot) waitForCredentials(ctx context.Context, deadline time.Duration) (client.Credentials, error) {
+func (b *EmbeddedBot) waitForClient(ctx context.Context, deadline time.Duration) (*client.Client, error) {
 	waitCtx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 
@@ -148,30 +148,18 @@ func (b *EmbeddedBot) waitForCredentials(ctx context.Context, deadline time.Dura
 		log.Infof("credential ready")
 	}
 
-	return b.credential, nil
+	c, err := b.buildClient(ctx)
+	return c, trace.Wrap(err)
+
 }
 
 // StartAndWaitForClient starts the EmbeddedBot and waits for a client to be available.
-// It returns an error if the EmbeddedBot is not able to get a certificate before the deadline.
-// If you need a client.Credentials instead, you can use StartAndWaitForCredentials.
+// This is the proper way of starting the EmbeddedBot. It returns an error if the
+// EmbeddedBot is not able to get a certificate before the deadline.
 func (b *EmbeddedBot) StartAndWaitForClient(ctx context.Context, deadline time.Duration) (*client.Client, error) {
 	b.start(ctx)
-	_, err := b.waitForCredentials(ctx, deadline)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	c, err := b.buildClient(ctx)
+	c, err := b.waitForClient(ctx, deadline)
 	return c, trace.Wrap(err)
-}
-
-// StartAndWaitForCredentials starts the EmbeddedBot and waits for credentials to become ready.
-// It returns an error if the EmbeddedBot is not able to get a certificate before the deadline.
-// If you need a client.Client instead, you can use StartAndWaitForClient.
-func (b *EmbeddedBot) StartAndWaitForCredentials(ctx context.Context, deadline time.Duration) (client.Credentials, error) {
-	b.start(ctx)
-	creds, err := b.waitForCredentials(ctx, deadline)
-	return creds, trace.Wrap(err)
 }
 
 // buildClient reads tbot's memory disttination, retrieves the certificates

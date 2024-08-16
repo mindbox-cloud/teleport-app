@@ -16,27 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { Theme } from 'design/theme/themes/types';
-
-export interface BackgroundColorProps {
-  requiresRequest?: boolean;
-  selected?: boolean;
-  pinned?: boolean;
-  theme: Theme;
-}
-
-export const getBackgroundColor = (props: BackgroundColorProps) => {
+export const getBackgroundColor = props => {
   if (props.requiresRequest && props.pinned) {
-    return props.theme.colors.interactive.tonal.primary[0].background;
+    return props.theme.colors.interactive.tonal.primary[0];
   }
   if (props.requiresRequest) {
     return props.theme.colors.spotBackground[0];
   }
   if (props.selected) {
-    return props.theme.colors.interactive.tonal.primary[2].background;
+    return props.theme.colors.interactive.tonal.primary[2];
   }
   if (props.pinned) {
-    return props.theme.colors.interactive.tonal.primary[1].background;
+    return props.theme.colors.interactive.tonal.primary[1];
   }
   return 'transparent';
 };

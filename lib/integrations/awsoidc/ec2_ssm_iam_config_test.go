@@ -39,8 +39,6 @@ func TestEC2SSMIAMConfigReqDefaults(t *testing.T) {
 			IntegrationRole: "integrationrole",
 			SSMDocumentName: "MyDoc",
 			ProxyPublicURL:  "https://proxy.example.com",
-			ClusterName:     "my-cluster",
-			IntegrationName: "my-integration",
 		}
 	}
 
@@ -60,8 +58,6 @@ func TestEC2SSMIAMConfigReqDefaults(t *testing.T) {
 				IntegrationRoleEC2SSMPolicy: "EC2DiscoverWithSSM",
 				SSMDocumentName:             "MyDoc",
 				ProxyPublicURL:              "https://proxy.example.com",
-				ClusterName:                 "my-cluster",
-				IntegrationName:             "my-integration",
 			},
 		},
 		{
@@ -78,24 +74,6 @@ func TestEC2SSMIAMConfigReqDefaults(t *testing.T) {
 			req: func() EC2SSMIAMConfigureRequest {
 				req := baseReq()
 				req.IntegrationRole = ""
-				return req
-			},
-			errCheck: badParameterCheck,
-		},
-		{
-			name: "missing integration name",
-			req: func() EC2SSMIAMConfigureRequest {
-				req := baseReq()
-				req.IntegrationName = ""
-				return req
-			},
-			errCheck: badParameterCheck,
-		},
-		{
-			name: "missing cluster name",
-			req: func() EC2SSMIAMConfigureRequest {
-				req := baseReq()
-				req.ClusterName = ""
 				return req
 			},
 			errCheck: badParameterCheck,
@@ -140,8 +118,6 @@ func TestEC2SSMIAMConfig(t *testing.T) {
 			IntegrationRole: "integrationrole",
 			SSMDocumentName: "MyDoc",
 			ProxyPublicURL:  "https://proxy.example.com",
-			ClusterName:     "my-cluster",
-			IntegrationName: "my-integration",
 		}
 	}
 
@@ -181,21 +157,13 @@ func TestEC2SSMIAMConfig(t *testing.T) {
 
 			err := ConfigureEC2SSM(ctx, &clt, tt.req())
 			tt.errCheck(t, err)
-			if err == nil {
-				require.Contains(t, clt.existingDocs, tt.req().SSMDocumentName)
-				require.ElementsMatch(t, []ssmtypes.Tag{
-					{Key: aws.String("teleport.dev/cluster"), Value: aws.String("my-cluster")},
-					{Key: aws.String("teleport.dev/integration"), Value: aws.String("my-integration")},
-					{Key: aws.String("teleport.dev/origin"), Value: aws.String("integration_awsoidc")},
-				}, clt.existingDocs[tt.req().SSMDocumentName])
-			}
 		})
 	}
 }
 
 type mockEC2SSMIAMConfigClient struct {
 	existingRoles []string
-	existingDocs  map[string][]ssmtypes.Tag
+	existingDocs  []string
 }
 
 // PutRolePolicy creates or replaces a Policy by its name in a IAM Role.
@@ -211,12 +179,8 @@ func (m *mockEC2SSMIAMConfigClient) PutRolePolicy(ctx context.Context, params *i
 
 // CreateDocument creates an SSM document.
 func (m *mockEC2SSMIAMConfigClient) CreateDocument(ctx context.Context, params *ssm.CreateDocumentInput, optFns ...func(*ssm.Options)) (*ssm.CreateDocumentOutput, error) {
-	if m.existingDocs == nil {
-		m.existingDocs = make(map[string][]ssmtypes.Tag)
-	}
-	if _, ok := m.existingDocs[aws.ToString(params.Name)]; ok {
+	if slices.Contains(m.existingDocs, aws.ToString(params.Name)) {
 		return nil, &ssmtypes.DocumentAlreadyExists{}
 	}
-	m.existingDocs[aws.ToString(params.Name)] = params.Tags
 	return nil, nil
 }

@@ -281,18 +281,16 @@ func Test_session_trackSession(t *testing.T) {
 			assertErr: require.NoError,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sess := &session{
 				log: logrus.New().WithField(teleport.ComponentKey, "test"),
 				id:  uuid.New(),
 				req: &http.Request{
-					URL: &url.URL{
-						RawQuery: "command=command&command=arg1&command=arg2",
-					},
+					URL: &url.URL{},
 				},
 				podName:         "podName",
-				podNamespace:    "podNamespace",
 				accessEvaluator: auth.NewSessionAccessEvaluator(tt.args.policies, types.KubernetesSessionKind, "username"),
 				ctx: authContext{
 					Context: authz.Context{
@@ -321,18 +319,6 @@ func Test_session_trackSession(t *testing.T) {
 			}
 			err := sess.trackSession(p, tt.args.policies)
 			tt.assertErr(t, err)
-			if err != nil {
-				return
-			}
-			tracker := tt.args.authClient.(*mockSessionTrackerService).tracker
-			require.Equal(t, "username", tracker.GetHostUser())
-			require.Equal(t, "name", tracker.GetClusterName())
-			require.Equal(t, "kubeClusterName", tracker.GetKubeCluster())
-			require.Equal(t, sess.id.String(), tracker.GetSessionID())
-			require.Equal(t, []string{"command", "arg1", "arg2"}, tracker.GetCommand())
-			require.Equal(t, "podNamespace/podName", tracker.GetHostname())
-			require.Equal(t, types.KubernetesSessionKind, tracker.GetSessionKind())
-
 		})
 	}
 }
@@ -340,11 +326,9 @@ func Test_session_trackSession(t *testing.T) {
 type mockSessionTrackerService struct {
 	authclient.ClientI
 	returnErr bool
-	tracker   types.SessionTracker
 }
 
-func (m *mockSessionTrackerService) CreateSessionTracker(_ context.Context, tracker types.SessionTracker) (types.SessionTracker, error) {
-	m.tracker = tracker
+func (m *mockSessionTrackerService) CreateSessionTracker(ctx context.Context, tracker types.SessionTracker) (types.SessionTracker, error) {
 	if m.returnErr {
 		return nil, trace.ConnectionProblem(nil, "mock error")
 	}

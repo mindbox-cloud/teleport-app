@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/google/uuid"
 	"github.com/gravitational/trace"
 	"github.com/jonboulle/clockwork"
@@ -43,16 +42,15 @@ import (
 	"github.com/gravitational/teleport/api/constants"
 	"github.com/gravitational/teleport/api/types"
 	apiutils "github.com/gravitational/teleport/api/utils"
-	"github.com/gravitational/teleport/api/utils/keys"
 	"github.com/gravitational/teleport/lib/auth/accesspoint"
 	"github.com/gravitational/teleport/lib/auth/authclient"
+	"github.com/gravitational/teleport/lib/auth/native"
 	"github.com/gravitational/teleport/lib/auth/state"
 	authority "github.com/gravitational/teleport/lib/auth/testauthority"
 	"github.com/gravitational/teleport/lib/authz"
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/backend/memory"
 	"github.com/gravitational/teleport/lib/cache"
-	"github.com/gravitational/teleport/lib/cryptosuites"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/events/eventstest"
@@ -283,9 +281,7 @@ func NewTestAuthServer(cfg TestAuthServerConfig) (*TestAuthServer, error) {
 	}
 
 	srv.AuthServer, err = NewServer(&InitConfig{
-		DataDir:                cfg.Dir,
 		Backend:                srv.Backend,
-		VersionStorage:         NewFakeTeleportVersion(),
 		Authority:              authority.NewWithClock(cfg.Clock),
 		Access:                 access,
 		Identity:               identity,
@@ -357,17 +353,9 @@ func NewTestAuthServer(cfg TestAuthServerConfig) (*TestAuthServer, error) {
 		return nil, trace.Wrap(err)
 	}
 
-	token, err := types.NewProvisionTokenFromSpec("static-token", time.Unix(0, 0).UTC(), types.ProvisionTokenSpecV2{
-		Roles: types.SystemRoles{types.RoleNode},
-	})
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
 	// set static tokens
 	staticTokens, err := types.NewStaticTokens(types.StaticTokensSpecV2{
-		StaticTokens: []types.ProvisionTokenV1{
-			*token.V1(),
-		},
+		StaticTokens: []types.ProvisionTokenV1{},
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -519,7 +507,7 @@ func (a *TestAuthServer) GenerateUserCert(key []byte, username string, ttl time.
 		user:          userState,
 		ttl:           ttl,
 		compatibility: compatibility,
-		sshPublicKey:  key,
+		publicKey:     key,
 		checker:       checker,
 		traits:        userState.GetTraits(),
 	})
@@ -548,27 +536,15 @@ func PrivateKeyToPublicKeyTLS(privateKey []byte) (tlsPublicKey []byte, err error
 // returns private public key pair
 func generateCertificate(authServer *Server, identity TestIdentity) ([]byte, []byte, error) {
 	ctx := context.TODO()
-
-	key, err := cryptosuites.GenerateKeyWithAlgorithm(cryptosuites.ECDSAP256)
+	priv, pub, err := native.GenerateKeyPair()
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
 	}
 
-	privateKeyPEM, err := keys.MarshalPrivateKey(key)
+	tlsPublicKey, err := PrivateKeyToPublicKeyTLS(priv)
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
 	}
-
-	tlsPublicKeyPEM, err := keys.MarshalPublicKey(key.Public())
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-
-	sshPublicKey, err := ssh.NewPublicKey(key.Public())
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-	sshPublicKeyPEM := ssh.MarshalAuthorizedKey(sshPublicKey)
 
 	clusterName, err := authServer.GetClusterName()
 	if err != nil {
@@ -595,7 +571,7 @@ func generateCertificate(authServer *Server, identity TestIdentity) ([]byte, []b
 		}
 
 		certs, err := authServer.generateUserCert(ctx, certRequest{
-			tlsPublicKey:     tlsPublicKeyPEM,
+			publicKey:        pub,
 			user:             userState,
 			ttl:              identity.TTL,
 			usage:            identity.AcceptedUsage,
@@ -609,34 +585,34 @@ func generateCertificate(authServer *Server, identity TestIdentity) ([]byte, []b
 		if err != nil {
 			return nil, nil, trace.Wrap(err)
 		}
-		return certs.TLS, privateKeyPEM, nil
+		return certs.TLS, priv, nil
 	case authz.BuiltinRole:
 		certs, err := authServer.GenerateHostCerts(ctx,
 			&proto.HostCertsRequest{
 				HostID:       id.Username,
 				NodeName:     id.Username,
 				Role:         id.Role,
-				PublicTLSKey: tlsPublicKeyPEM,
-				PublicSSHKey: sshPublicKeyPEM,
+				PublicTLSKey: tlsPublicKey,
+				PublicSSHKey: pub,
 				SystemRoles:  id.AdditionalSystemRoles,
 			})
 		if err != nil {
 			return nil, nil, trace.Wrap(err)
 		}
-		return certs.TLS, privateKeyPEM, nil
+		return certs.TLS, priv, nil
 	case authz.RemoteBuiltinRole:
 		certs, err := authServer.GenerateHostCerts(ctx,
 			&proto.HostCertsRequest{
 				HostID:       id.Username,
 				NodeName:     id.Username,
 				Role:         id.Role,
-				PublicTLSKey: tlsPublicKeyPEM,
-				PublicSSHKey: sshPublicKeyPEM,
+				PublicTLSKey: tlsPublicKey,
+				PublicSSHKey: pub,
 			})
 		if err != nil {
 			return nil, nil, trace.Wrap(err)
 		}
-		return certs.TLS, privateKeyPEM, nil
+		return certs.TLS, priv, nil
 	default:
 		return nil, nil, trace.BadParameter("identity of unknown type %T is unsupported", identity)
 	}
@@ -861,7 +837,6 @@ func NewTestTLSServer(cfg TestTLSServerConfig) (*TestTLSServer, error) {
 		return nil, trace.Wrap(err)
 	}
 	tlsConfig.Time = cfg.AuthServer.Clock().Now
-	tlsCert := tlsConfig.Certificates[0]
 
 	srv.Listener, err = net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -869,13 +844,12 @@ func NewTestTLSServer(cfg TestTLSServerConfig) (*TestTLSServer, error) {
 	}
 
 	srv.TLSServer, err = NewTLSServer(context.Background(), TLSServerConfig{
-		Listener:             srv.Listener,
-		AccessPoint:          srv.AuthServer.AuthServer.Cache,
-		TLS:                  tlsConfig,
-		GetClientCertificate: func() (*tls.Certificate, error) { return &tlsCert, nil },
-		APIConfig:            *srv.APIConfig,
-		LimiterConfig:        *srv.Limiter,
-		AcceptedUsage:        cfg.AcceptedUsage,
+		Listener:      srv.Listener,
+		AccessPoint:   srv.AuthServer.AuthServer.Cache,
+		TLS:           tlsConfig,
+		APIConfig:     *srv.APIConfig,
+		LimiterConfig: *srv.Limiter,
+		AcceptedUsage: cfg.AcceptedUsage,
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -987,7 +961,7 @@ func (t *TestTLSServer) NewClientFromWebSession(sess types.WebSession) (*authcli
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	tlsCert, err := tls.X509KeyPair(sess.GetTLSCert(), sess.GetTLSPriv())
+	tlsCert, err := tls.X509KeyPair(sess.GetTLSCert(), sess.GetPriv())
 	if err != nil {
 		return nil, trace.Wrap(err, "failed to parse TLS cert and key")
 	}
@@ -1147,42 +1121,14 @@ func (t *TestTLSServer) Stop() error {
 	return err
 }
 
-// FakeTeleportVersion fake version storage implementation always return current version.
-type FakeTeleportVersion struct{}
-
-// NewFakeTeleportVersion creates fake version storage.
-func NewFakeTeleportVersion() *FakeTeleportVersion {
-	return &FakeTeleportVersion{}
-}
-
-// GetTeleportVersion returns current Teleport version.
-func (s FakeTeleportVersion) GetTeleportVersion(_ context.Context) (*semver.Version, error) {
-	return teleport.SemVersion, nil
-}
-
-// WriteTeleportVersion stub function for writing.
-func (s FakeTeleportVersion) WriteTeleportVersion(_ context.Context, _ *semver.Version) error {
-	return nil
-}
-
 // NewServerIdentity generates new server identity, used in tests
 func NewServerIdentity(clt *Server, hostID string, role types.SystemRole) (*state.Identity, error) {
-	key, err := cryptosuites.GenerateKeyWithAlgorithm(cryptosuites.ECDSAP256)
+	priv, pub, err := native.GenerateKeyPair()
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	privateKeyPEM, err := keys.MarshalPrivateKey(key)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	sshPubKey, err := ssh.NewPublicKey(key.Public())
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	tlsPubKey, err := keys.MarshalPublicKey(key.Public())
+	publicTLS, err := PrivateKeyToPublicKeyTLS(priv)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -1192,14 +1138,14 @@ func NewServerIdentity(clt *Server, hostID string, role types.SystemRole) (*stat
 			HostID:       hostID,
 			NodeName:     hostID,
 			Role:         role,
-			PublicSSHKey: ssh.MarshalAuthorizedKey(sshPubKey),
-			PublicTLSKey: tlsPubKey,
+			PublicTLSKey: publicTLS,
+			PublicSSHKey: pub,
 		})
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	return state.ReadIdentityFromKeyPair(privateKeyPEM, certs)
+	return state.ReadIdentityFromKeyPair(priv, certs)
 }
 
 // clt limits required interface to the necessary methods

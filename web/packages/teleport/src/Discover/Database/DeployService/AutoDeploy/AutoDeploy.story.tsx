@@ -17,7 +17,8 @@
  */
 
 import React from 'react';
-import { delay, http, HttpResponse } from 'msw';
+import { initialize, mswLoader } from 'msw-storybook-addon';
+import { rest } from 'msw';
 
 import cfg from 'teleport/config';
 
@@ -39,7 +40,10 @@ import { AutoDeploy } from './AutoDeploy';
 
 export default {
   title: 'Teleport/Discover/Database/Deploy/Auto',
+  loaders: [mswLoader],
 };
+
+initialize();
 
 export const Init = () => {
   return (
@@ -48,23 +52,20 @@ export const Init = () => {
     </ComponentWrapper>
   );
 };
+
 Init.parameters = {
   msw: {
     handlers: [
-      http.post(cfg.api.awsSecurityGroupsListPath, () =>
-        HttpResponse.json({ securityGroups: securityGroupsResponse })
-      ),
-      http.post(cfg.api.awsDeployTeleportServicePath, () =>
-        HttpResponse.json({ serviceDashboardUrl: 'some-dashboard-url' })
-      ),
-      http.post(cfg.api.awsSubnetListPath, () =>
-        HttpResponse.json({ subnets: subnetsResponse })
+      rest.post(
+        cfg.getListSecurityGroupsUrl('test-integration'),
+        (req, res, ctx) =>
+          res(ctx.json({ securityGroups: securityGroupsResponse }))
       ),
     ],
   },
 };
 
-export const InitWithAutoDiscover = () => {
+export const InitWithAutoEnroll = () => {
   return (
     <TeleportProvider
       resourceKind={ResourceKind.Database}
@@ -72,6 +73,7 @@ export const InitWithAutoDiscover = () => {
         ...getDbMeta(),
         autoDiscovery: {
           config: { name: '', discoveryGroup: '', aws: [] },
+          requiredVpcsAndSubnets: {},
         },
       }}
       resourceSpec={getDbResourceSpec(
@@ -83,25 +85,28 @@ export const InitWithAutoDiscover = () => {
     </TeleportProvider>
   );
 };
-InitWithAutoDiscover.parameters = {
+InitWithAutoEnroll.parameters = {
   msw: {
     handlers: [
-      http.post(cfg.api.awsSecurityGroupsListPath, () =>
-        HttpResponse.json({ securityGroups: securityGroupsResponse })
+      rest.post(
+        cfg.getListSecurityGroupsUrl('test-integration'),
+        (req, res, ctx) =>
+          res(ctx.json({ securityGroups: securityGroupsResponse }))
       ),
-      http.post(cfg.getAwsRdsDbsDeployServicesUrl('test-integration'), () =>
-        HttpResponse.json({
-          clusterDashboardUrl: 'some-cluster-dashboard-url',
-        })
-      ),
-      http.post(cfg.api.awsSubnetListPath, () =>
-        HttpResponse.json({ subnets: subnetsResponse })
+      rest.post(
+        cfg.getAwsRdsDbsDeployServicesUrl('test-integration'),
+        (req, res, ctx) =>
+          res(
+            ctx.json({
+              clusterDashboardUrl: 'some-cluster-dashboard-url',
+            })
+          )
       ),
     ],
   },
 };
 
-export const InitWithLabelsWithDeployFailure = () => {
+export const InitWithLabels = () => {
   return (
     <TeleportProvider
       resourceKind={ResourceKind.Database}
@@ -121,22 +126,14 @@ export const InitWithLabelsWithDeployFailure = () => {
     </TeleportProvider>
   );
 };
-InitWithLabelsWithDeployFailure.parameters = {
+
+InitWithLabels.parameters = {
   msw: {
     handlers: [
-      http.post(cfg.api.awsSecurityGroupsListPath, () =>
-        HttpResponse.json({ securityGroups: securityGroupsResponse })
-      ),
-      http.post(cfg.api.awsDeployTeleportServicePath, () =>
-        HttpResponse.json(
-          {
-            error: { message: 'Whoops, something went wrong.' },
-          },
-          { status: 500 }
-        )
-      ),
-      http.post(cfg.api.awsSubnetListPath, () =>
-        HttpResponse.json({ subnets: subnetsResponse })
+      rest.post(
+        cfg.getListSecurityGroupsUrl('test-integration'),
+        (req, res, ctx) =>
+          res(ctx.json({ securityGroups: securityGroupsResponse }))
       ),
     ],
   },
@@ -153,21 +150,15 @@ export const InitSecurityGroupsLoadingFailed = () => {
 InitSecurityGroupsLoadingFailed.parameters = {
   msw: {
     handlers: [
-      http.post(cfg.api.awsSecurityGroupsListPath, () =>
-        HttpResponse.json(
-          {
-            message: 'some error when trying to list security groups',
-          },
-          { status: 403 }
-        )
-      ),
-      http.post(cfg.api.awsSubnetListPath, () =>
-        HttpResponse.json(
-          {
-            error: { message: 'Whoops, error getting subnets' },
-          },
-          { status: 403 }
-        )
+      rest.post(
+        cfg.getListSecurityGroupsUrl('test-integration'),
+        (req, res, ctx) =>
+          res(
+            ctx.status(403),
+            ctx.json({
+              message: 'some error when trying to list security groups',
+            })
+          )
       ),
     ],
   },
@@ -184,44 +175,13 @@ export const InitSecurityGroupsLoading = () => {
 InitSecurityGroupsLoading.parameters = {
   msw: {
     handlers: [
-      http.post(cfg.api.awsSecurityGroupsListPath, () => delay('infinite')),
-      http.post(cfg.api.awsSubnetListPath, () => delay('infinite')),
+      rest.post(
+        cfg.getListSecurityGroupsUrl('test-integration'),
+        (req, res, ctx) => res(ctx.delay('infinite'))
+      ),
     ],
   },
 };
-
-const subnetsResponse = [
-  {
-    name: 'aws-something-PrivateSubnet1A',
-    id: 'subnet-e40cd872-74de-54e3-a081',
-    availability_zone: 'us-east-1c',
-  },
-  {
-    name: 'aws-something-PrivateSubnet2A',
-    id: 'subnet-e6f9e40e-a7c7-52ab-b8e8',
-    availability_zone: 'us-east-1a',
-  },
-  {
-    name: '',
-    id: 'subnet-9106bc09-ea32-5216-ae3b',
-    availability_zone: 'us-east-1b',
-  },
-  {
-    name: '',
-    id: 'subnet-0ee385cf-b090-5cf7-b692',
-    availability_zone: 'us-east-1c',
-  },
-  {
-    name: 'something-long-test-1-cluster/SubnetPublicU',
-    id: 'subnet-0f0b563e-629f-5921-841d',
-    availability_zone: 'us-east-1c',
-  },
-  {
-    name: 'something-long-test-1-cluster/SubnetPrivateUS',
-    id: 'subnet-30c9e2f6-65ce-5422-bbc0',
-    availability_zone: 'us-east-1c',
-  },
-];
 
 const securityGroupsResponse = [
   {

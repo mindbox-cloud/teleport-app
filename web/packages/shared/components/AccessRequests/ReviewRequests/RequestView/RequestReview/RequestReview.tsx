@@ -18,7 +18,7 @@
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { ButtonPrimary, Text, Box, Alert, Flex, Label, H3 } from 'design';
+import { ButtonPrimary, Text, Box, Alert, Flex, Label } from 'design';
 import { Warning } from 'design/Icon';
 import { Radio } from 'design/RadioGroup';
 
@@ -118,8 +118,10 @@ export default function RequestReview({
           mt={7}
           style={{ position: 'relative' }}
         >
-          <Box bg="levels.sunken" py={1} px={3}>
-            <H3 mr={3}>{user} - add a review</H3>
+          <Box bg="levels.sunken" py={1} px={3} alignItems="center">
+            <Text typography="h6" mr={3}>
+              {user} - add a review
+            </Text>
           </Box>
           <Box p={3} bg="levels.elevated">
             {submitReviewAttempt.status === 'error' && (
@@ -335,7 +337,7 @@ const TextWithSmallerLineHeight = styled(Text)`
   color: ${p => p.theme.colors.text.muted};
 `;
 
-const HorizontalLine = styled.div<{ height?: number }>`
+const HorizontalLine = styled.div`
   width: 2px;
   height: ${p => p.height || 92}px;
   background-color: ${props => props.theme.colors.spotBackground[0]};

@@ -29,8 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/gravitational/trace"
 	"github.com/stretchr/testify/require"
-
-	"github.com/gravitational/teleport/lib/integrations/awsoidc/tags"
 )
 
 var badParameterCheck = func(t require.TestingT, err error, msgAndArgs ...interface{}) {
@@ -74,7 +72,7 @@ func TestDeployServiceIAMConfigReqDefaults(t *testing.T) {
 				TaskRole:                           "taskrole",
 				partitionID:                        "aws",
 				IntegrationRoleDeployServicePolicy: "DeployService",
-				ResourceCreationTags: tags.AWSTags{
+				ResourceCreationTags: AWSTags{
 					"teleport.dev/cluster":     "mycluster",
 					"teleport.dev/integration": "myintegration",
 					"teleport.dev/origin":      "integration_awsoidc",

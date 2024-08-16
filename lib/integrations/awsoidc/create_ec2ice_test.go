@@ -29,8 +29,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/gravitational/trace"
 	"github.com/stretchr/testify/require"
-
-	"github.com/gravitational/teleport/lib/integrations/awsoidc/tags"
 )
 
 type mockCreateEC2ICEClient struct {
@@ -187,7 +185,7 @@ func TestCreateEC2ICERequest(t *testing.T) {
 					SubnetID:         "subnet-123",
 					SecurityGroupIDs: []string{"sg-1", "sg-2"},
 				}},
-				ResourceCreationTags: tags.AWSTags{
+				ResourceCreationTags: AWSTags{
 					"teleport.dev/origin":      "integration_awsoidc",
 					"teleport.dev/cluster":     "teleport-cluster",
 					"teleport.dev/integration": "teleportdev",

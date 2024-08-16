@@ -54,12 +54,11 @@ import (
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/constants"
 	"github.com/gravitational/teleport/api/types"
-	"github.com/gravitational/teleport/api/utils/keys"
-	"github.com/gravitational/teleport/entitlements"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/authclient"
 	"github.com/gravitational/teleport/lib/auth/native"
 	"github.com/gravitational/teleport/lib/authz"
+	"github.com/gravitational/teleport/lib/client"
 	clients "github.com/gravitational/teleport/lib/cloud"
 	"github.com/gravitational/teleport/lib/cloud/mocks"
 	"github.com/gravitational/teleport/lib/defaults"
@@ -1077,9 +1076,7 @@ func TestMongoDBMaxMessageSize(t *testing.T) {
 func TestAccessDisabled(t *testing.T) {
 	modules.SetTestModules(t, &modules.TestModules{
 		TestFeatures: modules.Features{
-			Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-				entitlements.DB: {Enabled: false},
-			},
+			DB: false,
 		},
 	})
 
@@ -1943,19 +1940,14 @@ func (c *testContext) cassandraClientWithAddr(ctx context.Context, proxyAddress,
 
 // startLocalALPNProxy starts local ALPN proxy for the specified database.
 func (c *testContext) startLocalALPNProxy(ctx context.Context, proxyAddr, teleportUser string, route tlsca.RouteToDatabase) (*alpnproxy.LocalProxy, error) {
-	key, err := keys.ParsePrivateKey(fixtures.PEMBytes["rsa"])
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	publicKeyPEM, err := keys.MarshalPublicKey(key.Public())
+	key, err := client.GenerateRSAKey()
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
 	clientCert, err := c.authServer.GenerateDatabaseTestCert(
 		auth.DatabaseTestCertRequest{
-			PublicKey:       publicKeyPEM,
+			PublicKey:       key.MarshalSSHPublicKey(),
 			Cluster:         c.clusterName,
 			Username:        teleportUser,
 			RouteToDatabase: route,
@@ -2248,10 +2240,7 @@ func setupTestContext(ctx context.Context, t testing.TB, withDatabases ...withDa
 	authServer, err := auth.NewTestAuthServer(auth.TestAuthServerConfig{
 		Clock:       testCtx.clock,
 		ClusterName: testCtx.clusterName,
-		AuthPreferenceSpec: &types.AuthPreferenceSpecV2{
-			SignatureAlgorithmSuite: types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_BALANCED_V1,
-		},
-		Dir: t.TempDir(),
+		Dir:         t.TempDir(),
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, authServer.Close()) })

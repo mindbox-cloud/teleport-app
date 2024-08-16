@@ -479,7 +479,7 @@ func (s *Service) ListGateways() []gateway.Gateway {
 }
 
 // GetGatewayCLICommand creates the CLI command used for the provided gateway.
-func (s *Service) GetGatewayCLICommand(ctx context.Context, gateway gateway.Gateway) (cmd.Cmds, error) {
+func (s *Service) GetGatewayCLICommand(gateway gateway.Gateway) (cmd.Cmds, error) {
 	targetURI := gateway.TargetURI()
 	switch {
 	case targetURI.IsDB():
@@ -488,12 +488,7 @@ func (s *Service) GetGatewayCLICommand(ctx context.Context, gateway gateway.Gate
 			return cmd.Cmds{}, trace.Wrap(err)
 		}
 
-		clusterClient, err := s.GetCachedClient(ctx, cluster.URI)
-		if err != nil {
-			return cmd.Cmds{}, trace.Wrap(err)
-		}
-
-		cmds, err := cmd.NewDBCLICommand(ctx, cluster, gateway, clusterClient.AuthClient)
+		cmds, err := cmd.NewDBCLICommand(cluster, gateway)
 		return cmds, trace.Wrap(err)
 
 	case targetURI.IsKube():

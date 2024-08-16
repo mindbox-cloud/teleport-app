@@ -27,7 +27,14 @@ import React, {
 } from 'react';
 
 import styled from 'styled-components';
-import { Box, Flex, Button, ButtonSecondary, Text, ButtonBorder } from 'design';
+import {
+  Box,
+  Flex,
+  ButtonLink,
+  ButtonSecondary,
+  Text,
+  ButtonBorder,
+} from 'design';
 import { Icon, Magnifier, PushPin } from 'design/Icon';
 import { Danger } from 'design/Alert';
 
@@ -448,9 +455,7 @@ export function UnifiedResources(props: UnifiedResourcesProps) {
             {resourcesFetchAttempt.statusCode !== 400 &&
               resourcesFetchAttempt.statusCode !== 403 && (
                 <Box flex="0 0 auto" ml={2}>
-                  <Button type="button" onClick={onRetryClicked}>
-                    Retry
-                  </Button>
+                  <ButtonLink onClick={onRetryClicked}>Retry</ButtonLink>
                 </Box>
               )}
           </Danger>
@@ -655,7 +660,7 @@ function generateUnifiedResourceKey(
 function NoPinned() {
   return (
     <Box p={8} mt={3} mx="auto" textAlign="center">
-      <Text typography="h1">You have not pinned any resources</Text>
+      <Text typography="h3">You have not pinned any resources</Text>
     </Box>
   );
 }
@@ -670,7 +675,7 @@ function NoResults({
   if (query) {
     return (
       <Text
-        typography="h1"
+        typography="h3"
         mt={9}
         mx="auto"
         justifyContent="center"

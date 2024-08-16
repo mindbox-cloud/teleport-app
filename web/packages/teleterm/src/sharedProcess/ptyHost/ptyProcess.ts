@@ -16,23 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { readlink } from 'node:fs';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import { EventEmitter } from 'node:events';
+import { readlink } from 'fs';
+
+import { exec } from 'child_process';
+
+import { promisify } from 'util';
+
+import { EventEmitter } from 'events';
 
 import * as nodePTY from 'node-pty';
-import which from 'which';
-
-import { wait } from 'shared/utils/wait';
 
 import Logger from 'teleterm/logger';
 
 import { PtyProcessOptions, IPtyProcess } from './types';
 
 type Status = 'open' | 'not_initialized' | 'terminated';
-
-const pathEnvVar = process.platform === 'win32' ? 'Path' : 'PATH';
 
 export class PtyProcess extends EventEmitter implements IPtyProcess {
   private _buffered = true;
@@ -56,24 +54,8 @@ export class PtyProcess extends EventEmitter implements IPtyProcess {
     return this.options.ptyId;
   }
 
-  /**
-   * start spawns a new PTY with the arguments given through the constructor.
-   * It emits TermEventEnum.StartError on error. start itself always returns a fulfilled promise.
-   */
-  async start(cols: number, rows: number) {
-    if (process.platform === 'win32') {
-      this._logger.info(
-        this.options.useConpty ? 'ConPTY enabled' : 'ConPTY disabled'
-      );
-    }
-
+  start(cols: number, rows: number) {
     try {
-      // which throws an error if the argument is not found in path.
-      // TODO(ravicious): Remove the manual check for the existence of the executable after node-pty
-      // makes its behavior consistent across platforms.
-      // https://github.com/microsoft/node-pty/issues/689
-      await which(this.options.path, { path: this.options.env[pathEnvVar] });
-
       // TODO(ravicious): Set argv0 when node-pty adds support for it.
       // https://github.com/microsoft/node-pty/issues/472
       this._process = nodePTY.spawn(this.options.path, this.options.args, {
@@ -84,7 +66,8 @@ export class PtyProcess extends EventEmitter implements IPtyProcess {
         // https://unix.stackexchange.com/questions/123858
         cwd: this.options.cwd || getDefaultCwd(this.options.env),
         env: this.options.env,
-        useConpty: this.options.useConpty,
+        // Turn off ConPTY due to an uncaught exception being thrown when a PTY is closed.
+        useConpty: false,
       });
     } catch (error) {
       this._logger.error(error);
@@ -139,38 +122,10 @@ export class PtyProcess extends EventEmitter implements IPtyProcess {
     }
   }
 
-  async dispose() {
-    if (this._disposed) {
-      this._logger.info(`PTY process is not running. Nothing to kill`);
-      return;
-    }
-    const controller = new AbortController();
-    const processExit = promisifyProcessExit(this._process);
-
+  dispose() {
     this.removeAllListeners();
-    this._process.kill();
-
-    // Wait for the process to exit.
-    // It's needed for ssh sessions on Windows with ConPTY enabled.
-    // When we didn't wait, conhost.exe processes started by node-pty
-    // were left running after closing the app.
-    // Killing a process doesn't happen immediately, but instead appears to be
-    // queued, so we need to give it time to execute.
-    //
-    // Although this was added specifically for Windows,
-    // we run the same cleanup code for all platforms.
-    const hasExited = await Promise.race([
-      processExit.then(() => controller.abort()).then(() => true),
-      // timeout for killing the shared process is 5 seconds
-      wait(4_000, controller.signal)
-        .catch(() => {}) // ignore abort errors
-        .then(() => false),
-    ]);
-    if (hasExited) {
-      this._disposed = true;
-    } else {
-      this._logger.error('Failed to dispose PTY process within the timeout');
-    }
+    this._process?.kill();
+    this._disposed = true;
   }
 
   onData(cb: (data: string) => void) {
@@ -288,8 +243,4 @@ function getDefaultCwd(env: Record<string, string>): string {
   const userDir = process.platform === 'win32' ? env.USERPROFILE : env.HOME;
 
   return userDir || process.cwd();
-}
-
-function promisifyProcessExit(childProcess: nodePTY.IPty): Promise<void> {
-  return new Promise(resolve => childProcess.onExit(() => resolve()));
 }

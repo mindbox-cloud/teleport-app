@@ -42,6 +42,19 @@ import (
 
 func TestMain(m *testing.M) {
 	utils.InitLoggerForTests()
+	// Use a static metadata getter for tests.
+	metadataGetter = func(ctx context.Context) (*metadata.Metadata, error) {
+		return &metadata.Metadata{
+			OS:                    "llamaOS",
+			OSVersion:             "1.2.3",
+			HostArchitecture:      "llama",
+			GlibcVersion:          "llama.5.6.7",
+			InstallMethods:        []string{"llama", "alpaca"},
+			ContainerRuntime:      "test",
+			ContainerOrchestrator: "test",
+			CloudEnvironment:      "llama-cloud",
+		}, nil
+	}
 	os.Exit(m.Run())
 }
 
@@ -726,21 +739,6 @@ func TestUpdateLabels(t *testing.T) {
 // TestAgentMetadata verifies that an instance's agent metadata is received in
 // inventory control stream.
 func TestAgentMetadata(t *testing.T) {
-	// set the install method to validate it was returned as agent metadata
-	t.Setenv("TELEPORT_INSTALL_METHOD_AWSOIDC_DEPLOYSERVICE", "true")
-	metadataGetter = func(ctx context.Context) (*metadata.Metadata, error) {
-		return &metadata.Metadata{
-			OS:                    "llamaOS",
-			OSVersion:             "1.2.3",
-			HostArchitecture:      "llama",
-			GlibcVersion:          "llama.5.6.7",
-			InstallMethods:        []string{"llama", "alpaca"},
-			ContainerRuntime:      "test",
-			ContainerOrchestrator: "test",
-			CloudEnvironment:      "llama-cloud",
-		}, nil
-	}
-
 	const serverID = "test-instance"
 	const peerAddr = "1.2.3.4:456"
 

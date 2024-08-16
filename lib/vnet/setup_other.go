@@ -27,8 +27,6 @@ import (
 
 	"github.com/gravitational/trace"
 	"golang.zx2c4.com/wireguard/tun"
-
-	"github.com/gravitational/teleport/lib/vnet/daemon"
 )
 
 var (
@@ -48,10 +46,10 @@ func receiveTUNDevice(socket *net.UnixListener) (tun.Device, error) {
 	return nil, trace.Wrap(ErrVnetNotImplemented)
 }
 
-func execAdminProcess(ctx context.Context, config daemon.Config) error {
+func configureOS(ctx context.Context, cfg *osConfig) error {
 	return trace.Wrap(ErrVnetNotImplemented)
 }
 
-func DaemonSubcommand(ctx context.Context) error {
+func execAdminProcess(ctx context.Context, socketPath, ipv6Prefix, dnsAddr string) error {
 	return trace.Wrap(ErrVnetNotImplemented)
 }

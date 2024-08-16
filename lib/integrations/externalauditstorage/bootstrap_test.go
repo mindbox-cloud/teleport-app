@@ -20,7 +20,6 @@ package externalauditstorage_test
 
 import (
 	"context"
-	"maps"
 	"net/url"
 	"testing"
 
@@ -139,13 +138,11 @@ func TestBootstrapInfra(t *testing.T) {
 			athenaClt := &mockBootstrapAthenaClient{}
 			glueClt := &mockBootstrapGlueClient{}
 			err := externalauditstorage.BootstrapInfra(testCtx, externalauditstorage.BootstrapInfraParams{
-				Athena:          athenaClt,
-				Glue:            glueClt,
-				S3:              s3Clt,
-				Spec:            tc.spec,
-				Region:          tc.region,
-				ClusterName:     "my-cluster",
-				IntegrationName: "my-integration",
+				Athena: athenaClt,
+				Glue:   glueClt,
+				S3:     s3Clt,
+				Spec:   tc.spec,
+				Region: tc.region,
 			})
 			if tc.errWanted != "" {
 				require.ErrorContainsf(t, err, tc.errWanted, "the error returned did not contain: %s", tc.errWanted)
@@ -178,45 +175,12 @@ func TestBootstrapInfra(t *testing.T) {
 
 			// Re-run bootstrap
 			assert.NoError(t, externalauditstorage.BootstrapInfra(testCtx, externalauditstorage.BootstrapInfraParams{
-				Athena:          athenaClt,
-				Glue:            glueClt,
-				S3:              s3Clt,
-				Spec:            tc.spec,
-				Region:          tc.region,
-				ClusterName:     "my-cluster",
-				IntegrationName: "my-integration",
+				Athena: athenaClt,
+				Glue:   glueClt,
+				S3:     s3Clt,
+				Spec:   tc.spec,
+				Region: tc.region,
 			}))
-
-			// Enrure ownership tags were set on all resources.
-			// S3 Buckets
-			for bucketName, bucket := range s3Clt.buckets {
-				require.ElementsMatch(t,
-					[]s3types.Tag{
-						{Key: aws.String("teleport.dev/cluster"), Value: aws.String("my-cluster")},
-						{Key: aws.String("teleport.dev/origin"), Value: aws.String("integration_awsoidc")},
-						{Key: aws.String("teleport.dev/integration"), Value: aws.String("my-integration")},
-					},
-					bucket.tags,
-					"tags in bucket=%s do not match the ownership tags", bucketName)
-			}
-			// Athena Workgroup
-			require.ElementsMatch(t,
-				[]athenatypes.Tag{
-					{Key: aws.String("teleport.dev/cluster"), Value: aws.String("my-cluster")},
-					{Key: aws.String("teleport.dev/origin"), Value: aws.String("integration_awsoidc")},
-					{Key: aws.String("teleport.dev/integration"), Value: aws.String("my-integration")},
-				},
-				athenaClt.tags,
-			)
-			// Glue Database
-			require.Equal(t,
-				map[string]string{
-					"teleport.dev/cluster":     "my-cluster",
-					"teleport.dev/origin":      "integration_awsoidc",
-					"teleport.dev/integration": "my-integration",
-				},
-				glueClt.databaseTags,
-			)
 		})
 	}
 }
@@ -227,18 +191,15 @@ type mockBootstrapS3Client struct {
 
 type bucket struct {
 	locationConstraint s3types.BucketLocationConstraint
-	tags               []s3types.Tag
 }
 
 type mockBootstrapAthenaClient struct {
 	workgroup string
-	tags      []athenatypes.Tag
 }
 
 type mockBootstrapGlueClient struct {
-	table        string
-	database     string
-	databaseTags map[string]string
+	table    string
+	database string
 }
 
 func (c *mockBootstrapS3Client) CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error) {
@@ -256,19 +217,6 @@ func (c *mockBootstrapS3Client) CreateBucket(ctx context.Context, params *s3.Cre
 	}
 
 	return &s3.CreateBucketOutput{}, nil
-}
-
-func (c *mockBootstrapS3Client) PutBucketTagging(ctx context.Context, params *s3.PutBucketTaggingInput, optFns ...func(*s3.Options)) (*s3.PutBucketTaggingOutput, error) {
-	bucket, ok := c.buckets[*params.Bucket]
-	if !ok {
-		// bucket doesn't exist return no such bucket error
-		return nil, &s3types.NoSuchBucket{Message: aws.String("The bucket doesn't exist")}
-	}
-
-	bucket.tags = params.Tagging.TagSet
-	c.buckets[*params.Bucket] = bucket
-
-	return &s3.PutBucketTaggingOutput{}, nil
 }
 
 func (c *mockBootstrapS3Client) PutObjectLockConfiguration(ctx context.Context, params *s3.PutObjectLockConfigurationInput, optFns ...func(*s3.Options)) (*s3.PutObjectLockConfigurationOutput, error) {
@@ -303,7 +251,6 @@ func (c *mockBootstrapAthenaClient) CreateWorkGroup(ctx context.Context, params 
 	}
 
 	c.workgroup = *params.Name
-	c.tags = params.Tags
 
 	return &athena.CreateWorkGroupOutput{}, nil
 }
@@ -333,7 +280,6 @@ func (c *mockBootstrapGlueClient) CreateDatabase(ctx context.Context, params *gl
 	}
 
 	c.database = *params.DatabaseInput.Name
-	c.databaseTags = maps.Clone(params.Tags)
 
 	return &glue.CreateDatabaseOutput{}, nil
 }

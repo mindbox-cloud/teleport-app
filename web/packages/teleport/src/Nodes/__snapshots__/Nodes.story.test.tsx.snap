@@ -3,95 +3,38 @@
 exports[`empty state 1`] = `
 .c0 {
   box-sizing: border-box;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
-.c7 {
+.c3 {
   box-sizing: border-box;
-  padding: 56px;
-  padding-top: 32px;
+  margin-bottom: 24px;
+}
+
+.c8 {
+  box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
+  padding: 56px;
+  padding-top: 32px;
   width: 100%;
 }
 
-.c9 {
+.c10 {
   box-sizing: border-box;
   max-width: 600px;
 }
 
-.c10 {
+.c11 {
   box-sizing: border-box;
   margin-bottom: 24px;
   text-align: center;
 }
 
-.c14 {
-  box-sizing: border-box;
-  text-align: center;
-}
-
 .c15 {
-  line-height: 1.5;
-  margin: 0;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
-  outline: none;
-  position: relative;
   text-align: center;
-  text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
-  -webkit-font-smoothing: antialiased;
-  background-color: #9F85FF;
-  color: #000000;
-  border-color: transparent;
-  border-width: 1.5px;
-  padding: 0 30.5px;
-  min-height: 32px;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-  width: 224px;
-  text-transform: none;
-}
-
-.c15:focus-visible,
-.teleport-button__force-focus-visible .c15 {
-  background-color: #9F85FF;
-  color: #000000;
-  border-color: #000000;
-  border-radius: 2px;
-  outline: 2px solid #9F85FF;
-}
-
-.c15:hover,
-.teleport-button__force-hover .c15 {
-  background-color: #B29DFF;
-  border-color: transparent;
-  color: #000000;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.20),0px 5px 8px 0px rgba(0, 0, 0, 0.14),0px 1px 14px 0px rgba(0, 0, 0, 0.12);
-}
-
-.c15:active,
-.teleport-button__force-active .c15 {
-  background-color: #C5B6FF;
-  border-color: transparent;
-  color: #000000;
-}
-
-.c15:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
-  cursor: auto;
 }
 
 .c16 {
@@ -101,8 +44,7 @@ exports[`empty state 1`] = `
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -111,119 +53,143 @@ exports[`empty state 1`] = `
   position: relative;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
+  text-transform: uppercase;
+  transition: all 0.3s;
   -webkit-font-smoothing: antialiased;
-  background-color: transparent;
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255,255,255,0.18);
-  border-width: 1.5px;
-  padding: 0 30.5px;
+  color: #000000;
+  background: #9F85FF;
   min-height: 32px;
   font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
+  padding: 0px 24px;
+  width: 224px;
+  text-transform: none;
+}
+
+.c16:hover,
+.c16:focus {
+  background: #B29DFF;
+}
+
+.c16:active {
+  background: #C5B6FF;
+}
+
+.c16:disabled {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
+  cursor: auto;
+}
+
+.c17 {
+  line-height: 1.5;
+  margin: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  -webkit-font-smoothing: antialiased;
+  color: #FFFFFF;
+  background: rgba(255,255,255,0);
+  border: 1px solid rgba(255,255,255,0.36);
+  min-height: 32px;
+  font-size: 12px;
+  padding: 0px 24px;
   margin-left: 24px;
   width: 224px;
   text-transform: none;
 }
 
-.c16:focus-visible,
-.teleport-button__force-focus-visible .c16 {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255, 255, 255, 0.72);
-  border-radius: 4px;
-  outline: none;
+.c17:hover,
+.c17:focus {
+  background: rgba(255,255,255,0.07);
 }
 
-.c16:hover,
-.teleport-button__force-hover .c16 {
-  background-color: rgba(255,255,255,0.13);
-  border-color: transparent;
-  color: #FFFFFF;
-  box-shadow: none;
+.c17:active {
+  background: rgba(255,255,255,0.13);
 }
 
-.c16:active,
-.teleport-button__force-active .c16 {
-  background-color: rgba(255,255,255,0.18);
-  border-color: transparent;
-  color: #FFFFFF;
-}
-
-.c16:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
+.c17:disabled {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
   cursor: auto;
 }
 
-.c11 {
-  display: block;
-  outline: none;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 24px;
-  height: 160px;
-}
-
-.c5 {
+.c6 {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
+  font-weight: 300;
+  font-size: 22px;
   line-height: 32px;
-}
-
-.c12 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
-  line-height: 32px;
-  margin-bottom: 8px;
+  margin: 0px;
 }
 
 .c13 {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
-  font-size: 14px;
   font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  font-size: 24px;
+  margin: 0px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.c14 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  margin: 0px;
+  font-weight: 400;
+}
+
+.c12 {
+  display: block;
+  outline: none;
+  margin-bottom: 24px;
+  margin-left: auto;
+  margin-right: auto;
+  height: 160px;
 }
 
 .c1 {
   display: flex;
 }
 
-.c3 {
+.c4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.c8 {
+.c9 {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.c4 {
+.c5 {
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   height: 56px;
   margin-left: -40px;
   margin-right: -40px;
-  margin-bottom: 24px;
   padding-left: 40px;
   padding-right: 40px;
-  align-items: center;
-  align-items: center;
 }
 
-.c6 {
+.c7 {
   white-space: nowrap;
 }
 
@@ -231,8 +197,6 @@ exports[`empty state 1`] = `
   width: 100%;
   height: 100%;
   flex-direction: column;
-  padding-left: 40px;
-  padding-right: 40px;
 }
 
 .c2::after {
@@ -245,36 +209,38 @@ exports[`empty state 1`] = `
     class="c0 c1 c2"
   >
     <div
-      class="c0 c3 c4"
+      class="c3 c4 c5"
     >
-      <h1
-        class="c5 c6"
+      <div
+        class="c6 c7"
       >
         Servers
-      </h1>
+      </div>
     </div>
     <div
-      class="c7 c8 sc-gJhJTp c7"
+      class="c8 c9 sc-gEvEer c8"
       width="100%"
     >
       <div
-        class="c9"
+        class="c10"
       >
         <div
-          class="c10"
+          class="c11"
         >
           <img
-            class="c11"
+            class="c12"
             height="160px"
             src="file_stub"
           />
-          <h1
-            class="c12"
-          >
-            Add your first server to Teleport
-          </h1>
           <div
             class="c13"
+            font-size="24"
+            font-weight="700"
+          >
+            Add your first server to Teleport
+          </div>
+          <div
+            class="c14"
             font-size="14"
             font-weight="400"
             style="opacity: 0.6;"
@@ -283,24 +249,24 @@ exports[`empty state 1`] = `
           </div>
         </div>
         <div
-          class="c14"
+          class="c15"
         >
           <a
             href="/web/discover"
             style="text-decoration: none;"
           >
             <button
-              class="c15"
-              fill="filled"
+              class="c16"
+              kind="primary"
               width="224px"
             >
               Add Resource
             </button>
           </a>
           <a
-            class="c16"
-            fill="border"
+            class="c17"
             href="https://goteleport.com/docs/server-access/getting-started/"
+            kind="border"
             rel="noreferrer"
             target="_blank"
             width="224px"
@@ -315,7 +281,7 @@ exports[`empty state 1`] = `
 `;
 
 exports[`failed 1`] = `
-.c7 {
+.c8 {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -332,46 +298,56 @@ exports[`failed 1`] = `
   color: #000000;
 }
 
-.c7 a {
+.c8 a {
   color: #FFFFFF;
 }
 
 .c0 {
   box-sizing: border-box;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
-.c9 {
+.c3 {
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.c10 {
   box-sizing: border-box;
   width: 100%;
 }
 
-.c15 {
+.c16 {
   box-sizing: border-box;
   padding-left: 24px;
   padding-right: 24px;
 }
 
-.c25 {
+.c26 {
   box-sizing: border-box;
-  margin-right: 8px;
   margin-bottom: 4px;
+  margin-right: 8px;
+  margin-top: 8px;
+}
+
+.c30 {
+  box-sizing: border-box;
+}
+
+.c40 {
+  box-sizing: border-box;
   margin-top: 8px;
 }
 
 .c38 {
-  box-sizing: border-box;
-  margin-top: 8px;
-}
-
-.c36 {
   line-height: 1.5;
   margin: 0;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -380,85 +356,31 @@ exports[`failed 1`] = `
   position: relative;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
-  -webkit-font-smoothing: antialiased;
-  background-color: transparent;
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255,255,255,0.18);
-  border-width: 1.5px;
-  padding: 0 6.5px;
-  min-height: 24px;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-}
-
-.c36:focus-visible,
-.teleport-button__force-focus-visible .c36 {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255, 255, 255, 0.72);
-  border-radius: 4px;
-  outline: none;
-}
-
-.c36:hover,
-.teleport-button__force-hover .c36 {
-  background-color: rgba(255,255,255,0.13);
-  border-color: transparent;
-  color: #FFFFFF;
-  box-shadow: none;
-}
-
-.c36:active,
-.teleport-button__force-active .c36 {
-  background-color: rgba(255,255,255,0.18);
-  border-color: transparent;
-  color: #FFFFFF;
-}
-
-.c36:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
-  cursor: auto;
-}
-
-.c29 {
-  align-items: center;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  outline: none;
-  border-radius: 50%;
-  overflow: visible;
-  justify-content: center;
-  text-align: center;
-  flex: 0 0 auto;
-  background: transparent;
-  color: inherit;
+  text-transform: uppercase;
   transition: all 0.3s;
   -webkit-font-smoothing: antialiased;
-  font-size: 16px;
-  height: 32px;
-  width: 32px;
-  margin-left: 0;
-  margin-right: 0;
+  color: #FFFFFF;
+  background: rgba(255,255,255,0);
+  border: 1px solid rgba(255,255,255,0.36);
+  font-size: 10px;
+  min-height: 24px;
+  padding: 0px 16px;
+  height: 24px;
 }
 
-.c29:disabled {
-  color: rgba(255, 255, 255, 0.36);
-  cursor: default;
+.c38:hover,
+.c38:focus {
+  background: rgba(255,255,255,0.07);
 }
 
-.c29:not(:disabled):hover,
-.c29:not(:disabled):focus {
+.c38:active {
   background: rgba(255,255,255,0.13);
 }
 
-.c29:not(:disabled):active {
-  background: rgba(255,255,255,0.18);
+.c38:disabled {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
+  cursor: auto;
 }
 
 .c31 {
@@ -479,11 +401,12 @@ exports[`failed 1`] = `
   font-size: 16px;
   height: 32px;
   width: 32px;
-  margin-left: 0;
+  margin-left: 0px;
+  margin-right: 0px;
 }
 
 .c31:disabled {
-  color: rgba(255, 255, 255, 0.36);
+  color: rgba(255,255,255,0.36);
   cursor: default;
 }
 
@@ -496,21 +419,86 @@ exports[`failed 1`] = `
   background: rgba(255,255,255,0.18);
 }
 
-.c23 {
+.c33 {
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  outline: none;
+  border-radius: 50%;
+  overflow: visible;
+  justify-content: center;
+  text-align: center;
+  flex: 0 0 auto;
+  background: transparent;
+  color: inherit;
+  transition: all 0.3s;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  height: 32px;
+  width: 32px;
+  margin-left: 0px;
+}
+
+.c33:disabled {
+  color: rgba(255,255,255,0.36);
+  cursor: default;
+}
+
+.c33:not(:disabled):hover,
+.c33:not(:disabled):focus {
+  background: rgba(255,255,255,0.13);
+}
+
+.c33:not(:disabled):active {
+  background: rgba(255,255,255,0.18);
+}
+
+.c24 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.c37 {
+.c39 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255,255,255,0.72);
   margin-left: 4px;
+  margin-right: -8px;
 }
 
-.c34 {
+.c6 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 32px;
+  margin: 0px;
+}
+
+.c22 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0px;
+}
+
+.c28 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0px;
+  margin-right: 4px;
+  font-weight: 500;
+}
+
+.c36 {
   box-sizing: border-box;
   border-radius: 10px;
   display: inline-block;
@@ -525,74 +513,44 @@ exports[`failed 1`] = `
   margin-right: 4px;
 }
 
-.c5 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
-  line-height: 32px;
-}
-
-.c21 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-}
-
-.c27 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-  margin-right: 4px;
-}
-
 .c1 {
   display: flex;
 }
 
-.c3 {
+.c4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.c16 {
+.c17 {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.c26 {
+.c27 {
   display: flex;
   justify-content: flex-end;
 }
 
-.c33 {
+.c35 {
   display: flex;
   flex-wrap: wrap;
 }
 
-.c17 {
+.c18 {
   position: relative;
   display: flex;
   align-items: center;
   cursor: pointer;
 }
 
-.c17[disabled] {
+.c18[disabled] {
   cursor: default;
 }
 
-.c20 {
+.c21 {
   width: 32px;
   height: 16px;
   border-radius: 10px;
@@ -602,76 +560,74 @@ exports[`failed 1`] = `
   transition: background 0.15s ease-in-out;
 }
 
-.c20:hover {
+.c21:hover {
   background: rgba(255,255,255,0.13);
 }
 
-.c20:active {
+.c21:active {
   background: rgba(255,255,255,0.18);
 }
 
-.c20:before {
+.c21:before {
   content: '';
   position: absolute;
   top: 50%;
   width: 12px;
   height: 12px;
-  transform: translate(2px, -50%);
+  transform: translate(2px,-50%);
   border-radius: 14px;
   background: #FFFFFF;
-  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),0px 1px 1px rgba(0, 0, 0, 0.14),0px 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px rgba(0,0,0,0.14),0px 1px 3px rgba(0,0,0,0.12);
   transition: transform 0.05s ease-in;
 }
 
-.c18 {
+.c19 {
   opacity: 0;
   position: absolute;
   cursor: inherit;
   z-index: -1;
 }
 
-.c18:checked+.c19:before {
-  transform: translate(18px, -50%);
+.c19:checked + .c20:before {
+  transform: translate(18px,-50%);
 }
 
-.c18:enabled:checked+.c19 {
+.c19:enabled:checked + .c20 {
   background: #00BFA6;
 }
 
-.c18:enabled:checked+.c19:hover {
+.c19:enabled:checked + .c20:hover {
   background: #33CCB8;
 }
 
-.c18:enabled:checked+.c19:active {
+.c19:enabled:checked + .c20:active {
   background: #66D9CA;
 }
 
-.c18:disabled+.c19 {
+.c19:disabled + .c20 {
   background: rgba(255,255,255,0.07);
 }
 
-.c18:disabled+.c19:before {
+.c19:disabled + .c20:before {
   opacity: 0.36;
   box-shadow: none;
 }
 
-.c18:disabled:checked+.c19 {
-  background: rgba(0, 191, 166, 0.25);
+.c19:disabled:checked + .c20 {
+  background: rgba(0,191,166,0.25);
 }
 
-.c4 {
+.c5 {
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   height: 56px;
   margin-left: -40px;
   margin-right: -40px;
-  margin-bottom: 24px;
   padding-left: 40px;
   padding-right: 40px;
-  align-items: center;
-  align-items: center;
 }
 
-.c6 {
+.c7 {
   white-space: nowrap;
 }
 
@@ -679,8 +635,6 @@ exports[`failed 1`] = `
   width: 100%;
   height: 100%;
   flex-direction: column;
-  padding-left: 40px;
-  padding-right: 40px;
 }
 
 .c2::after {
@@ -688,7 +642,7 @@ exports[`failed 1`] = `
   padding-bottom: 24px;
 }
 
-.c32 {
+.c34 {
   border-collapse: collapse;
   border-spacing: 0;
   border-style: hidden;
@@ -696,43 +650,42 @@ exports[`failed 1`] = `
   width: 100%;
 }
 
-.c32>thead>tr>th,
-.c32>tbody>tr>th,
-.c32>tfoot>tr>th,
-.c32>thead>tr>td,
-.c32>tbody>tr>td,
-.c32>tfoot>tr>td {
+.c34 > thead > tr > th,
+.c34 > tbody > tr > th,
+.c34 > tfoot > tr > th,
+.c34 > thead > tr > td,
+.c34 > tbody > tr > td,
+.c34 > tfoot > tr > td {
   padding: 8px 8px;
   vertical-align: middle;
 }
 
-.c32>thead>tr>th:first-child,
-.c32>tbody>tr>th:first-child,
-.c32>tfoot>tr>th:first-child,
-.c32>thead>tr>td:first-child,
-.c32>tbody>tr>td:first-child,
-.c32>tfoot>tr>td:first-child {
+.c34 > thead > tr > th:first-child,
+.c34 > tbody > tr > th:first-child,
+.c34 > tfoot > tr > th:first-child,
+.c34 > thead > tr > td:first-child,
+.c34 > tbody > tr > td:first-child,
+.c34 > tfoot > tr > td:first-child {
   padding-left: 24px;
 }
 
-.c32>thead>tr>th:last-child,
-.c32>tbody>tr>th:last-child,
-.c32>tfoot>tr>th:last-child,
-.c32>thead>tr>td:last-child,
-.c32>tbody>tr>td:last-child,
-.c32>tfoot>tr>td:last-child {
+.c34 > thead > tr > th:last-child,
+.c34 > tbody > tr > th:last-child,
+.c34 > tfoot > tr > th:last-child,
+.c34 > thead > tr > td:last-child,
+.c34 > tbody > tr > td:last-child,
+.c34 > tfoot > tr > td:last-child {
   padding-right: 24px;
 }
 
-.c32>tbody>tr>td {
+.c34 > tbody > tr > td {
   vertical-align: middle;
 }
 
-.c32>thead>tr>th {
+.c34 > thead > tr > th {
   color: #FFFFFF;
   font-weight: 600;
   font-size: 14px;
-  line-height: 20px;
   line-height: 24px;
   cursor: pointer;
   padding-bottom: 0;
@@ -741,11 +694,11 @@ exports[`failed 1`] = `
   white-space: nowrap;
 }
 
-.c32>thead>tr>th svg {
+.c34 > thead > tr > th svg {
   height: 12px;
 }
 
-.c32>tbody>tr>td {
+.c34 > tbody > tr > td {
   color: #FFFFFF;
   font-weight: 300;
   font-size: 14px;
@@ -753,19 +706,19 @@ exports[`failed 1`] = `
   letter-spacing: 0.035px;
 }
 
-.c32 tbody tr {
+.c34 tbody tr {
   transition: all 150ms;
   position: relative;
   border-top: 2px solid rgba(255,255,255,0.07);
 }
 
-.c32 tbody tr:hover {
+.c34 tbody tr:hover {
   border-top: 2px solid rgba(0,0,0,0);
   background-color: #222C59;
 }
 
-.c32 tbody tr:hover:after {
-  box-shadow: 0px 1px 10px 0px rgba(0, 0, 0, 0.12),0px 4px 5px 0px rgba(0, 0, 0, 0.14),0px 2px 4px -1px rgba(0, 0, 0, 0.20);
+.c34 tbody tr:hover:after {
+  box-shadow: 0px 1px 10px 0px rgba(0,0,0,0.12),0px 4px 5px 0px rgba(0,0,0,0.14),0px 2px 4px -1px rgba(0,0,0,0.20);
   content: '';
   position: absolute;
   top: 0;
@@ -775,11 +728,11 @@ exports[`failed 1`] = `
   height: 100%;
 }
 
-.c32 tbody tr:hover +tr {
+.c34 tbody tr:hover + tr {
   border-top: 2px solid rgba(0,0,0,0);
 }
 
-.c8 {
+.c9 {
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -789,29 +742,29 @@ exports[`failed 1`] = `
   margin-top: 4px;
 }
 
-.c35 {
+.c37 {
   cursor: pointer;
 }
 
-.c35:hover {
+.c37:hover {
   background-color: rgba(255,255,255,0.13);
 }
 
-.c30 svg {
+.c32 svg {
   font-size: 20px;
 }
 
-.c30 svg:before {
+.c32 svg:before {
   padding-left: 1px;
 }
 
-.c28 {
+.c29 {
   flex-shrink: 1;
   flex-grow: 0;
   flex-basis: 0;
 }
 
-.c14 {
+.c15 {
   position: relative;
   height: 100%;
   right: 0;
@@ -821,7 +774,7 @@ exports[`failed 1`] = `
   border-radius: 0 200px 200px 0;
 }
 
-.c13 {
+.c14 {
   position: absolute;
   height: 100%;
   right: 0;
@@ -832,7 +785,7 @@ exports[`failed 1`] = `
   border-radius: 0 200px 200px 0;
 }
 
-.c11 {
+.c12 {
   position: relative;
   display: flex;
   overflow: hidden;
@@ -842,13 +795,13 @@ exports[`failed 1`] = `
   max-width: 725px;
 }
 
-.c10 {
+.c11 {
   border-radius: 200px;
   width: 100%;
   height: 48px;
 }
 
-.c12 {
+.c13 {
   border: none;
   outline: none;
   box-sizing: border-box;
@@ -863,19 +816,19 @@ exports[`failed 1`] = `
   padding-left: 24px;
 }
 
-.c24 {
+.c25 {
   height: 18px;
   width: 18px;
   color: inherit;
 }
 
-.c22 {
+.c23 {
   vertical-align: middle;
   display: inline-block;
   height: 18px;
 }
 
-.c22:hover {
+.c23:hover {
   cursor: pointer;
 }
 
@@ -883,16 +836,16 @@ exports[`failed 1`] = `
   class="c0 c1 c2"
 >
   <div
-    class="c0 c3 c4"
+    class="c3 c4 c5"
   >
-    <h1
-      class="c5 c6"
+    <div
+      class="c6 c7"
     >
       Servers
-    </h1>
+    </div>
   </div>
   <div
-    class="c7"
+    class="c8"
     kind="danger"
   >
     <div>
@@ -900,55 +853,55 @@ exports[`failed 1`] = `
     </div>
   </div>
   <nav
-    class="c8"
+    class="c9"
   >
     <form
-      class="c9 c3"
+      class="c10 c4"
       width="100%"
     >
       <div
-        class="c10"
+        class="c11"
       >
         <div
-          class="c11"
+          class="c12"
         >
           <input
-            class="c12"
+            class="c13"
             placeholder="Search..."
             value=""
           />
           <div
-            class="c13"
+            class="c14"
           >
             <div
-              class="c14"
+              class="c15"
             >
               <div
-                class="c15 c16"
+                class="c16 c17"
               >
                 <label
-                  class="c17"
+                  class="c18"
                 >
                   <input
-                    class="c18"
+                    class="c19"
                     data-testid="toggle"
                     type="checkbox"
                   />
                   <div
-                    class="c19 c20"
+                    class="c20 c21"
                   />
                 </label>
                 <div
-                  class="c21"
+                  class="c22"
                 >
                   Advanced
                 </div>
                 <span
-                  class="c22"
+                  class="c23"
                   role="icon"
                 >
                   <span
-                    class="c23 c24"
+                    class="c24 c25"
                   >
                     <svg
                       fill="currentColor"
@@ -976,11 +929,12 @@ exports[`failed 1`] = `
         </div>
       </div>
       <div
-        class="c25 c26"
+        class="c26 c27"
       >
         <div
-          class="c27"
-          style="white-space: nowrap;"
+          class="c28"
+          font-weight="500"
+          style="white-space: nowrap; letter-spacing: 0.15px;"
         >
           Showing 
           <strong>
@@ -999,18 +953,18 @@ exports[`failed 1`] = `
       </div>
     </form>
     <div
-      class="c9 c26 c28"
+      class="c10 c27 c29"
       width="100%"
     >
       <div
-        class="c0 c1"
+        class="c30 c1"
       >
         <button
-          class="c29 c30"
+          class="c31 c32"
           title="Previous page"
         >
           <span
-            class="c23 icon icon-circlearrowleft"
+            class="c24 icon icon-circlearrowleft"
           >
             <svg
               fill="currentColor"
@@ -1030,11 +984,11 @@ exports[`failed 1`] = `
           </span>
         </button>
         <button
-          class="c31 c30"
+          class="c33 c32"
           title="Next page"
         >
           <span
-            class="c23 icon icon-circlearrowright"
+            class="c24 icon icon-circlearrowright"
           >
             <svg
               fill="currentColor"
@@ -1054,7 +1008,7 @@ exports[`failed 1`] = `
     </div>
   </nav>
   <table
-    class="c32"
+    class="c34"
   >
     <thead>
       <tr>
@@ -1064,7 +1018,7 @@ exports[`failed 1`] = `
           >
             Hostname
             <span
-              class="c23 icon icon-chevronup"
+              class="c24 icon icon-chevronup"
               title="sort items asc"
             >
               <svg
@@ -1107,16 +1061,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1127,12 +1081,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1160,16 +1115,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1180,12 +1135,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1213,16 +1169,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1233,12 +1189,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1266,16 +1223,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1286,12 +1243,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1312,23 +1270,23 @@ exports[`failed 1`] = `
       </tr>
       <tr>
         <td>
-          Vukuron
+          zebpecda
         </td>
         <td>
           172.10.1.1:3022
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1339,12 +1297,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1377,16 +1336,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1397,12 +1356,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1423,7 +1383,7 @@ exports[`failed 1`] = `
       </tr>
       <tr>
         <td>
-          Nerjaeb
+          zebpecda
         </td>
         <td>
           <span
@@ -1435,16 +1395,16 @@ exports[`failed 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -1455,12 +1415,13 @@ exports[`failed 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -1482,21 +1443,21 @@ exports[`failed 1`] = `
     </tbody>
   </table>
   <div
-    class="c38"
+    class="c40"
   >
     <div
-      class="c9 c26 c28"
+      class="c10 c27 c29"
       width="100%"
     >
       <div
-        class="c0 c1"
+        class="c30 c1"
       >
         <button
-          class="c29 c30"
+          class="c31 c32"
           title="Previous page"
         >
           <span
-            class="c23 icon icon-circlearrowleft"
+            class="c24 icon icon-circlearrowleft"
           >
             <svg
               fill="currentColor"
@@ -1516,11 +1477,11 @@ exports[`failed 1`] = `
           </span>
         </button>
         <button
-          class="c31 c30"
+          class="c33 c32"
           title="Next page"
         >
           <span
-            class="c23 icon icon-circlearrowright"
+            class="c24 icon icon-circlearrowright"
           >
             <svg
               fill="currentColor"
@@ -1545,190 +1506,126 @@ exports[`failed 1`] = `
 exports[`loaded 1`] = `
 .c0 {
   box-sizing: border-box;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
-.c9 {
+.c3 {
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.c10 {
   box-sizing: border-box;
   width: 100%;
 }
 
-.c15 {
+.c16 {
   box-sizing: border-box;
   padding-left: 24px;
   padding-right: 24px;
 }
 
-.c25 {
+.c26 {
   box-sizing: border-box;
-  margin-right: 8px;
   margin-bottom: 4px;
+  margin-right: 8px;
   margin-top: 8px;
+}
+
+.c30 {
+  box-sizing: border-box;
+}
+
+.c40 {
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+
+.c8 {
+  line-height: 1.5;
+  margin: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  -webkit-font-smoothing: antialiased;
+  color: #000000;
+  background: #9F85FF;
+  min-height: 32px;
+  font-size: 12px;
+  padding: 0px 24px;
+  width: 240px;
+  text-transform: none;
+}
+
+.c8:hover,
+.c8:focus {
+  background: #B29DFF;
+}
+
+.c8:active {
+  background: #C5B6FF;
+}
+
+.c8:disabled {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
+  cursor: auto;
 }
 
 .c38 {
-  box-sizing: border-box;
-  margin-top: 8px;
-}
-
-.c7 {
   line-height: 1.5;
   margin: 0;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
-  outline: none;
-  position: relative;
-  text-align: center;
-  text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
-  -webkit-font-smoothing: antialiased;
-  background-color: transparent;
-  color: #9F85FF;
-  border-color: #9F85FF;
-  border-width: 1.5px;
-  padding: 0 30.5px;
-  min-height: 32px;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-  width: 240px;
-}
-
-.c7:focus-visible,
-.teleport-button__force-focus-visible .c7 {
-  background-color: #9F85FF;
-  color: #000000;
-  border-color: #000000;
-  border-radius: 2px;
-  outline: 2px solid #9F85FF;
-}
-
-.c7:hover,
-.teleport-button__force-hover .c7 {
-  background-color: #B29DFF;
-  border-color: transparent;
-  color: #000000;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.20),0px 5px 8px 0px rgba(0, 0, 0, 0.14),0px 1px 14px 0px rgba(0, 0, 0, 0.12);
-}
-
-.c7:active,
-.teleport-button__force-active .c7 {
-  background-color: #C5B6FF;
-  border-color: transparent;
-  color: #000000;
-}
-
-.c7:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
-  cursor: auto;
-}
-
-.c36 {
-  line-height: 1.5;
-  margin: 0;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
-  outline: none;
-  position: relative;
-  text-align: center;
-  text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
-  -webkit-font-smoothing: antialiased;
-  background-color: transparent;
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255,255,255,0.18);
-  border-width: 1.5px;
-  padding: 0 6.5px;
-  min-height: 24px;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-}
-
-.c36:focus-visible,
-.teleport-button__force-focus-visible .c36 {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.72);
-  border-color: rgba(255, 255, 255, 0.72);
-  border-radius: 4px;
-  outline: none;
-}
-
-.c36:hover,
-.teleport-button__force-hover .c36 {
-  background-color: rgba(255,255,255,0.13);
-  border-color: transparent;
-  color: #FFFFFF;
-  box-shadow: none;
-}
-
-.c36:active,
-.teleport-button__force-active .c36 {
-  background-color: rgba(255,255,255,0.18);
-  border-color: transparent;
-  color: #FFFFFF;
-}
-
-.c36:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
-  cursor: auto;
-}
-
-.c29 {
-  align-items: center;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
-  display: flex;
+  font-family: inherit;
+  font-weight: 600;
   outline: none;
-  border-radius: 50%;
-  overflow: visible;
-  justify-content: center;
+  position: relative;
   text-align: center;
-  flex: 0 0 auto;
-  background: transparent;
-  color: inherit;
+  text-decoration: none;
+  text-transform: uppercase;
   transition: all 0.3s;
   -webkit-font-smoothing: antialiased;
-  font-size: 16px;
-  height: 32px;
-  width: 32px;
-  margin-left: 0;
-  margin-right: 0;
+  color: #FFFFFF;
+  background: rgba(255,255,255,0);
+  border: 1px solid rgba(255,255,255,0.36);
+  font-size: 10px;
+  min-height: 24px;
+  padding: 0px 16px;
+  height: 24px;
 }
 
-.c29:disabled {
-  color: rgba(255, 255, 255, 0.36);
-  cursor: default;
+.c38:hover,
+.c38:focus {
+  background: rgba(255,255,255,0.07);
 }
 
-.c29:not(:disabled):hover,
-.c29:not(:disabled):focus {
+.c38:active {
   background: rgba(255,255,255,0.13);
 }
 
-.c29:not(:disabled):active {
-  background: rgba(255,255,255,0.18);
+.c38:disabled {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
+  cursor: auto;
 }
 
 .c31 {
@@ -1749,11 +1646,12 @@ exports[`loaded 1`] = `
   font-size: 16px;
   height: 32px;
   width: 32px;
-  margin-left: 0;
+  margin-left: 0px;
+  margin-right: 0px;
 }
 
 .c31:disabled {
-  color: rgba(255, 255, 255, 0.36);
+  color: rgba(255,255,255,0.36);
   cursor: default;
 }
 
@@ -1766,21 +1664,86 @@ exports[`loaded 1`] = `
   background: rgba(255,255,255,0.18);
 }
 
-.c23 {
+.c33 {
+  align-items: center;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  outline: none;
+  border-radius: 50%;
+  overflow: visible;
+  justify-content: center;
+  text-align: center;
+  flex: 0 0 auto;
+  background: transparent;
+  color: inherit;
+  transition: all 0.3s;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  height: 32px;
+  width: 32px;
+  margin-left: 0px;
+}
+
+.c33:disabled {
+  color: rgba(255,255,255,0.36);
+  cursor: default;
+}
+
+.c33:not(:disabled):hover,
+.c33:not(:disabled):focus {
+  background: rgba(255,255,255,0.13);
+}
+
+.c33:not(:disabled):active {
+  background: rgba(255,255,255,0.18);
+}
+
+.c24 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.c37 {
+.c39 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255,255,255,0.72);
   margin-left: 4px;
+  margin-right: -8px;
 }
 
-.c34 {
+.c6 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 32px;
+  margin: 0px;
+}
+
+.c22 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0px;
+}
+
+.c28 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  margin: 0px;
+  margin-right: 4px;
+  font-weight: 500;
+}
+
+.c36 {
   box-sizing: border-box;
   border-radius: 10px;
   display: inline-block;
@@ -1795,74 +1758,44 @@ exports[`loaded 1`] = `
   margin-right: 4px;
 }
 
-.c5 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
-  line-height: 32px;
-}
-
-.c21 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-}
-
-.c27 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-  margin-right: 4px;
-}
-
 .c1 {
   display: flex;
 }
 
-.c3 {
+.c4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.c16 {
+.c17 {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.c26 {
+.c27 {
   display: flex;
   justify-content: flex-end;
 }
 
-.c33 {
+.c35 {
   display: flex;
   flex-wrap: wrap;
 }
 
-.c17 {
+.c18 {
   position: relative;
   display: flex;
   align-items: center;
   cursor: pointer;
 }
 
-.c17[disabled] {
+.c18[disabled] {
   cursor: default;
 }
 
-.c20 {
+.c21 {
   width: 32px;
   height: 16px;
   border-radius: 10px;
@@ -1872,76 +1805,74 @@ exports[`loaded 1`] = `
   transition: background 0.15s ease-in-out;
 }
 
-.c20:hover {
+.c21:hover {
   background: rgba(255,255,255,0.13);
 }
 
-.c20:active {
+.c21:active {
   background: rgba(255,255,255,0.18);
 }
 
-.c20:before {
+.c21:before {
   content: '';
   position: absolute;
   top: 50%;
   width: 12px;
   height: 12px;
-  transform: translate(2px, -50%);
+  transform: translate(2px,-50%);
   border-radius: 14px;
   background: #FFFFFF;
-  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),0px 1px 1px rgba(0, 0, 0, 0.14),0px 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px rgba(0,0,0,0.14),0px 1px 3px rgba(0,0,0,0.12);
   transition: transform 0.05s ease-in;
 }
 
-.c18 {
+.c19 {
   opacity: 0;
   position: absolute;
   cursor: inherit;
   z-index: -1;
 }
 
-.c18:checked+.c19:before {
-  transform: translate(18px, -50%);
+.c19:checked + .c20:before {
+  transform: translate(18px,-50%);
 }
 
-.c18:enabled:checked+.c19 {
+.c19:enabled:checked + .c20 {
   background: #00BFA6;
 }
 
-.c18:enabled:checked+.c19:hover {
+.c19:enabled:checked + .c20:hover {
   background: #33CCB8;
 }
 
-.c18:enabled:checked+.c19:active {
+.c19:enabled:checked + .c20:active {
   background: #66D9CA;
 }
 
-.c18:disabled+.c19 {
+.c19:disabled + .c20 {
   background: rgba(255,255,255,0.07);
 }
 
-.c18:disabled+.c19:before {
+.c19:disabled + .c20:before {
   opacity: 0.36;
   box-shadow: none;
 }
 
-.c18:disabled:checked+.c19 {
-  background: rgba(0, 191, 166, 0.25);
+.c19:disabled:checked + .c20 {
+  background: rgba(0,191,166,0.25);
 }
 
-.c4 {
+.c5 {
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   height: 56px;
   margin-left: -40px;
   margin-right: -40px;
-  margin-bottom: 24px;
   padding-left: 40px;
   padding-right: 40px;
-  align-items: center;
-  align-items: center;
 }
 
-.c6 {
+.c7 {
   white-space: nowrap;
 }
 
@@ -1949,8 +1880,6 @@ exports[`loaded 1`] = `
   width: 100%;
   height: 100%;
   flex-direction: column;
-  padding-left: 40px;
-  padding-right: 40px;
 }
 
 .c2::after {
@@ -1958,7 +1887,7 @@ exports[`loaded 1`] = `
   padding-bottom: 24px;
 }
 
-.c32 {
+.c34 {
   border-collapse: collapse;
   border-spacing: 0;
   border-style: hidden;
@@ -1966,43 +1895,42 @@ exports[`loaded 1`] = `
   width: 100%;
 }
 
-.c32>thead>tr>th,
-.c32>tbody>tr>th,
-.c32>tfoot>tr>th,
-.c32>thead>tr>td,
-.c32>tbody>tr>td,
-.c32>tfoot>tr>td {
+.c34 > thead > tr > th,
+.c34 > tbody > tr > th,
+.c34 > tfoot > tr > th,
+.c34 > thead > tr > td,
+.c34 > tbody > tr > td,
+.c34 > tfoot > tr > td {
   padding: 8px 8px;
   vertical-align: middle;
 }
 
-.c32>thead>tr>th:first-child,
-.c32>tbody>tr>th:first-child,
-.c32>tfoot>tr>th:first-child,
-.c32>thead>tr>td:first-child,
-.c32>tbody>tr>td:first-child,
-.c32>tfoot>tr>td:first-child {
+.c34 > thead > tr > th:first-child,
+.c34 > tbody > tr > th:first-child,
+.c34 > tfoot > tr > th:first-child,
+.c34 > thead > tr > td:first-child,
+.c34 > tbody > tr > td:first-child,
+.c34 > tfoot > tr > td:first-child {
   padding-left: 24px;
 }
 
-.c32>thead>tr>th:last-child,
-.c32>tbody>tr>th:last-child,
-.c32>tfoot>tr>th:last-child,
-.c32>thead>tr>td:last-child,
-.c32>tbody>tr>td:last-child,
-.c32>tfoot>tr>td:last-child {
+.c34 > thead > tr > th:last-child,
+.c34 > tbody > tr > th:last-child,
+.c34 > tfoot > tr > th:last-child,
+.c34 > thead > tr > td:last-child,
+.c34 > tbody > tr > td:last-child,
+.c34 > tfoot > tr > td:last-child {
   padding-right: 24px;
 }
 
-.c32>tbody>tr>td {
+.c34 > tbody > tr > td {
   vertical-align: middle;
 }
 
-.c32>thead>tr>th {
+.c34 > thead > tr > th {
   color: #FFFFFF;
   font-weight: 600;
   font-size: 14px;
-  line-height: 20px;
   line-height: 24px;
   cursor: pointer;
   padding-bottom: 0;
@@ -2011,11 +1939,11 @@ exports[`loaded 1`] = `
   white-space: nowrap;
 }
 
-.c32>thead>tr>th svg {
+.c34 > thead > tr > th svg {
   height: 12px;
 }
 
-.c32>tbody>tr>td {
+.c34 > tbody > tr > td {
   color: #FFFFFF;
   font-weight: 300;
   font-size: 14px;
@@ -2023,19 +1951,19 @@ exports[`loaded 1`] = `
   letter-spacing: 0.035px;
 }
 
-.c32 tbody tr {
+.c34 tbody tr {
   transition: all 150ms;
   position: relative;
   border-top: 2px solid rgba(255,255,255,0.07);
 }
 
-.c32 tbody tr:hover {
+.c34 tbody tr:hover {
   border-top: 2px solid rgba(0,0,0,0);
   background-color: #222C59;
 }
 
-.c32 tbody tr:hover:after {
-  box-shadow: 0px 1px 10px 0px rgba(0, 0, 0, 0.12),0px 4px 5px 0px rgba(0, 0, 0, 0.14),0px 2px 4px -1px rgba(0, 0, 0, 0.20);
+.c34 tbody tr:hover:after {
+  box-shadow: 0px 1px 10px 0px rgba(0,0,0,0.12),0px 4px 5px 0px rgba(0,0,0,0.14),0px 2px 4px -1px rgba(0,0,0,0.20);
   content: '';
   position: absolute;
   top: 0;
@@ -2045,11 +1973,11 @@ exports[`loaded 1`] = `
   height: 100%;
 }
 
-.c32 tbody tr:hover +tr {
+.c34 tbody tr:hover + tr {
   border-top: 2px solid rgba(0,0,0,0);
 }
 
-.c8 {
+.c9 {
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -2059,29 +1987,29 @@ exports[`loaded 1`] = `
   margin-top: 4px;
 }
 
-.c35 {
+.c37 {
   cursor: pointer;
 }
 
-.c35:hover {
+.c37:hover {
   background-color: rgba(255,255,255,0.13);
 }
 
-.c30 svg {
+.c32 svg {
   font-size: 20px;
 }
 
-.c30 svg:before {
+.c32 svg:before {
   padding-left: 1px;
 }
 
-.c28 {
+.c29 {
   flex-shrink: 1;
   flex-grow: 0;
   flex-basis: 0;
 }
 
-.c14 {
+.c15 {
   position: relative;
   height: 100%;
   right: 0;
@@ -2091,7 +2019,7 @@ exports[`loaded 1`] = `
   border-radius: 0 200px 200px 0;
 }
 
-.c13 {
+.c14 {
   position: absolute;
   height: 100%;
   right: 0;
@@ -2102,7 +2030,7 @@ exports[`loaded 1`] = `
   border-radius: 0 200px 200px 0;
 }
 
-.c11 {
+.c12 {
   position: relative;
   display: flex;
   overflow: hidden;
@@ -2112,13 +2040,13 @@ exports[`loaded 1`] = `
   max-width: 725px;
 }
 
-.c10 {
+.c11 {
   border-radius: 200px;
   width: 100%;
   height: 48px;
 }
 
-.c12 {
+.c13 {
   border: none;
   outline: none;
   box-sizing: border-box;
@@ -2133,19 +2061,19 @@ exports[`loaded 1`] = `
   padding-left: 24px;
 }
 
-.c24 {
+.c25 {
   height: 18px;
   width: 18px;
   color: inherit;
 }
 
-.c22 {
+.c23 {
   vertical-align: middle;
   display: inline-block;
   height: 18px;
 }
 
-.c22:hover {
+.c23:hover {
   cursor: pointer;
 }
 
@@ -2153,20 +2081,20 @@ exports[`loaded 1`] = `
   class="c0 c1 c2"
 >
   <div
-    class="c0 c3 c4"
+    class="c3 c4 c5"
   >
-    <h1
-      class="c5 c6"
+    <div
+      class="c6 c7"
     >
       Servers
-    </h1>
+    </div>
     <a
       href="/web/discover"
       style="text-decoration: none;"
     >
       <button
-        class="c7"
-        fill="border"
+        class="c8"
+        kind="primary"
         title=""
         width="240px"
       >
@@ -2175,55 +2103,55 @@ exports[`loaded 1`] = `
     </a>
   </div>
   <nav
-    class="c8"
+    class="c9"
   >
     <form
-      class="c9 c3"
+      class="c10 c4"
       width="100%"
     >
       <div
-        class="c10"
+        class="c11"
       >
         <div
-          class="c11"
+          class="c12"
         >
           <input
-            class="c12"
+            class="c13"
             placeholder="Search..."
             value=""
           />
           <div
-            class="c13"
+            class="c14"
           >
             <div
-              class="c14"
+              class="c15"
             >
               <div
-                class="c15 c16"
+                class="c16 c17"
               >
                 <label
-                  class="c17"
+                  class="c18"
                 >
                   <input
-                    class="c18"
+                    class="c19"
                     data-testid="toggle"
                     type="checkbox"
                   />
                   <div
-                    class="c19 c20"
+                    class="c20 c21"
                   />
                 </label>
                 <div
-                  class="c21"
+                  class="c22"
                 >
                   Advanced
                 </div>
                 <span
-                  class="c22"
+                  class="c23"
                   role="icon"
                 >
                   <span
-                    class="c23 c24"
+                    class="c24 c25"
                   >
                     <svg
                       fill="currentColor"
@@ -2251,11 +2179,12 @@ exports[`loaded 1`] = `
         </div>
       </div>
       <div
-        class="c25 c26"
+        class="c26 c27"
       >
         <div
-          class="c27"
-          style="white-space: nowrap;"
+          class="c28"
+          font-weight="500"
+          style="white-space: nowrap; letter-spacing: 0.15px;"
         >
           Showing 
           <strong>
@@ -2274,18 +2203,18 @@ exports[`loaded 1`] = `
       </div>
     </form>
     <div
-      class="c9 c26 c28"
+      class="c10 c27 c29"
       width="100%"
     >
       <div
-        class="c0 c1"
+        class="c30 c1"
       >
         <button
-          class="c29 c30"
+          class="c31 c32"
           title="Previous page"
         >
           <span
-            class="c23 icon icon-circlearrowleft"
+            class="c24 icon icon-circlearrowleft"
           >
             <svg
               fill="currentColor"
@@ -2305,11 +2234,11 @@ exports[`loaded 1`] = `
           </span>
         </button>
         <button
-          class="c31 c30"
+          class="c33 c32"
           title="Next page"
         >
           <span
-            class="c23 icon icon-circlearrowright"
+            class="c24 icon icon-circlearrowright"
           >
             <svg
               fill="currentColor"
@@ -2329,7 +2258,7 @@ exports[`loaded 1`] = `
     </div>
   </nav>
   <table
-    class="c32"
+    class="c34"
   >
     <thead>
       <tr>
@@ -2339,7 +2268,7 @@ exports[`loaded 1`] = `
           >
             Hostname
             <span
-              class="c23 icon icon-chevronup"
+              class="c24 icon icon-chevronup"
               title="sort items asc"
             >
               <svg
@@ -2382,16 +2311,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2402,12 +2331,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2435,16 +2365,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2455,12 +2385,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2488,16 +2419,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2508,12 +2439,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2541,16 +2473,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2561,12 +2493,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2587,23 +2520,23 @@ exports[`loaded 1`] = `
       </tr>
       <tr>
         <td>
-          Vukuron
+          zebpecda
         </td>
         <td>
           172.10.1.1:3022
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2614,12 +2547,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2652,16 +2586,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2672,12 +2606,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2698,7 +2633,7 @@ exports[`loaded 1`] = `
       </tr>
       <tr>
         <td>
-          Nerjaeb
+          zebpecda
         </td>
         <td>
           <span
@@ -2710,16 +2645,16 @@ exports[`loaded 1`] = `
         </td>
         <td>
           <div
-            class="c0 c33"
+            class="c30 c35"
           >
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               cluster: one
             </div>
             <div
-              class="c34 c35"
+              class="c36 c37"
               kind="secondary"
             >
               kernel: 4.15.0-51-generic
@@ -2730,12 +2665,13 @@ exports[`loaded 1`] = `
           align="right"
         >
           <button
-            class="c36"
-            fill="border"
+            class="c38"
+            height="24px"
+            kind="border"
           >
             Connect
             <span
-              class="c37 icon icon-chevrondown"
+              class="c39 icon icon-chevrondown"
               color="text.slightlyMuted"
             >
               <svg
@@ -2757,21 +2693,21 @@ exports[`loaded 1`] = `
     </tbody>
   </table>
   <div
-    class="c38"
+    class="c40"
   >
     <div
-      class="c9 c26 c28"
+      class="c10 c27 c29"
       width="100%"
     >
       <div
-        class="c0 c1"
+        class="c30 c1"
       >
         <button
-          class="c29 c30"
+          class="c31 c32"
           title="Previous page"
         >
           <span
-            class="c23 icon icon-circlearrowleft"
+            class="c24 icon icon-circlearrowleft"
           >
             <svg
               fill="currentColor"
@@ -2791,11 +2727,11 @@ exports[`loaded 1`] = `
           </span>
         </button>
         <button
-          class="c31 c30"
+          class="c33 c32"
           title="Next page"
         >
           <span
-            class="c23 icon icon-circlearrowright"
+            class="c24 icon icon-circlearrowright"
           >
             <svg
               fill="currentColor"
@@ -2820,74 +2756,79 @@ exports[`loaded 1`] = `
 exports[`readonly empty state 1`] = `
 .c0 {
   box-sizing: border-box;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
-.c7 {
+.c3 {
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+.c8 {
   box-sizing: border-box;
   max-width: 664px;
-  padding: 56px;
   margin-left: auto;
   margin-right: auto;
+  padding: 56px;
   color: #FFFFFF;
   text-align: center;
   border-radius: 12px;
 }
 
-.c5 {
+.c6 {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
+  font-weight: 300;
+  font-size: 22px;
   line-height: 32px;
-}
-
-.c8 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 500;
-  font-size: 24px;
-  line-height: 32px;
-  margin-bottom: 16px;
+  margin: 0px;
 }
 
 .c9 {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
+  font-weight: 300;
+  font-size: 28px;
+  line-height: 32px;
+  margin: 0px;
+  margin-bottom: 16px;
 }
 
 .c10 {
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
+  margin: 0px;
+}
+
+.c11 {
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 600;
+  margin: 0px;
 }
 
 .c1 {
   display: flex;
 }
 
-.c3 {
+.c4 {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.c4 {
+.c5 {
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   height: 56px;
   margin-left: -40px;
   margin-right: -40px;
-  margin-bottom: 24px;
   padding-left: 40px;
   padding-right: 40px;
-  align-items: center;
-  align-items: center;
 }
 
-.c6 {
+.c7 {
   white-space: nowrap;
 }
 
@@ -2895,8 +2836,6 @@ exports[`readonly empty state 1`] = `
   width: 100%;
   height: 100%;
   flex-direction: column;
-  padding-left: 40px;
-  padding-right: 40px;
 }
 
 .c2::after {
@@ -2909,31 +2848,31 @@ exports[`readonly empty state 1`] = `
     class="c0 c1 c2"
   >
     <div
-      class="c0 c3 c4"
+      class="c3 c4 c5"
     >
-      <h1
-        class="c5 c6"
+      <div
+        class="c6 c7"
       >
         Servers
-      </h1>
+      </div>
     </div>
     <div
-      class="c7"
+      class="c8"
       color="text.main"
     >
-      <h1
-        class="c8"
-      >
-        No Servers Found
-      </h1>
       <div
         class="c9"
+      >
+        No Servers Found
+      </div>
+      <div
+        class="c10"
       >
         Either there are no 
         servers
          in the "
         <span
-          class="c10"
+          class="c11"
         >
           im-a-cluster
         </span>

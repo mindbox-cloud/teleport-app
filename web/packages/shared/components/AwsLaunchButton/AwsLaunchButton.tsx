@@ -18,7 +18,7 @@
 
 import React from 'react';
 import styled from 'styled-components';
-import { space, SpaceProps } from 'design/system';
+import { space } from 'design/system';
 import { ButtonBorder, Flex, Text, Box } from 'design';
 import Menu, { MenuItem } from 'design/Menu';
 import { ChevronDown } from 'design/Icon';
@@ -26,7 +26,7 @@ import { ChevronDown } from 'design/Icon';
 import { AwsRole } from 'shared/services/apps';
 
 export class AwsLaunchButton extends React.Component<Props> {
-  anchorEl: React.MutableRefObject<HTMLButtonElement> = React.createRef();
+  anchorEl = React.createRef();
 
   state = {
     open: false,
@@ -55,7 +55,7 @@ export class AwsLaunchButton extends React.Component<Props> {
           textTransform="none"
           width={this.props.width || '90px'}
           size="small"
-          setRef={e => (this.anchorEl.current = e)}
+          setRef={e => (this.anchorEl = e)}
           onClick={this.onOpen}
         >
           Launch
@@ -76,7 +76,7 @@ export class AwsLaunchButton extends React.Component<Props> {
             horizontal: 'right',
           }}
           getContentAnchorEl={null}
-          anchorEl={this.anchorEl.current}
+          anchorEl={this.anchorEl}
           open={open}
           onClose={this.onClose}
         >
@@ -141,7 +141,7 @@ function RoleItemList({
     <Flex flexDirection="column">
       <Text
         px="2"
-        typography="body3"
+        fontSize="11px"
         css={`
           color: ${props => props.theme.colors.text.main};
           background: ${props => props.theme.colors.spotBackground[2]};
@@ -193,14 +193,14 @@ const StyledMenuItem = styled(MenuItem)(
     color: ${theme.colors.text.main};
   }
 
-  &:last-child {
+  :last-child {
     border-bottom: none;
     margin-bottom: 8px;
   }
 `
 );
 
-const StyledInput = styled.input<SpaceProps>(
+const StyledInput = styled.input(
   ({ theme }) => `
   background: transparent;
   border: 1px solid ${theme.colors.text.muted};
@@ -215,7 +215,7 @@ const StyledInput = styled.input<SpaceProps>(
     outline: none;
   }
 
-  &::placeholder {
+  ::placeholder {
     color: ${theme.colors.text.muted};
     opacity: 1;
   }

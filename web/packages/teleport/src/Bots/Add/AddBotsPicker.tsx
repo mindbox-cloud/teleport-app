@@ -35,8 +35,6 @@ import {
 } from 'design/SVGIcon';
 import { Box, Flex, Link as ExternalLink, Text } from 'design';
 
-import { P } from 'design/Text/Text';
-
 import cfg from 'teleport/config';
 
 import {
@@ -148,10 +146,10 @@ export function AddBotsPicker() {
         <FeatureHeaderTitle>Select Bot Type</FeatureHeaderTitle>
       </FeatureHeader>
 
-      <P mb="5">
+      <Text typography="body1" mb="5">
         Set up Teleport Machine ID to allow CI/CD workflows and other machines
         to access resources protected by Teleport.
-      </P>
+      </Text>
 
       <BotTiles hasCreateBotPermission={ctx.getFeatureFlags().addBots} />
     </>

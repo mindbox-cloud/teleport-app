@@ -79,7 +79,7 @@ Teleport cluster that agents use to determine when to check for upgrades.
    Create the role resource:
 
    ```code
-   $ tctl create cmc-editor.yaml
+   $ tctl create cmd-editor.yaml
    ```
 
 1. Add the role to your Teleport user:
@@ -189,16 +189,9 @@ Server ID                            Hostname      Services Version Upgrader
    </TabItem>
    <TabItem label="Self-Hosted Teleport Enterprise">
 
-   1. Follow the instructions in the Teleport [installation
-      guide](../installation.mdx#package-repositories) to install the `teleport`
-      binary on your Linux server for your package manager.
-
-   1. Using your package manager, install `teleport-ent-updater` on the
-      server where you installed `teleport`. For example:
-
-      ```code
-      $ apt-get install -y teleport-ent-updater
-      ```
+   ```code
+   $ curl https://goteleport.com/static/install.sh | bash -s ${TELEPORT_VERSION?} enterprise
+   ```
 
    </TabItem>
    </Tabs>

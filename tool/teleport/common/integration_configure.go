@@ -92,8 +92,6 @@ func onIntegrationConfEC2SSMIAM(ctx context.Context, params config.IntegrationCo
 		IntegrationRole: params.RoleName,
 		SSMDocumentName: params.SSMDocumentName,
 		ProxyPublicURL:  params.ProxyPublicURL,
-		ClusterName:     params.ClusterName,
-		IntegrationName: params.IntegrationName,
 	}
 	return trace.Wrap(awsoidc.ConfigureEC2SSM(ctx, awsClt, confReq))
 }
@@ -146,6 +144,8 @@ func onIntegrationConfAWSOIDCIdP(ctx context.Context, clf config.CommandLineFlag
 		IntegrationName:    clf.IntegrationConfAWSOIDCIdPArguments.Name,
 		IntegrationRole:    clf.IntegrationConfAWSOIDCIdPArguments.Role,
 		ProxyPublicAddress: clf.IntegrationConfAWSOIDCIdPArguments.ProxyPublicURL,
+		S3BucketLocation:   clf.IntegrationConfAWSOIDCIdPArguments.S3BucketURI,
+		S3JWKSContentsB64:  clf.IntegrationConfAWSOIDCIdPArguments.S3JWKSContentsB64,
 	}
 	return trace.Wrap(awsoidc.ConfigureIdPIAM(ctx, iamClient, confReq))
 }
@@ -191,9 +191,7 @@ func onIntegrationConfExternalAuditCmd(ctx context.Context, params easconfig.Ext
 				GlueDatabase:           params.GlueDatabase,
 				GlueTable:              params.GlueTable,
 			},
-			Region:          params.Region,
-			ClusterName:     params.ClusterName,
-			IntegrationName: params.IntegrationName,
+			Region: params.Region,
 		})
 		if err != nil {
 			return trace.Wrap(err)

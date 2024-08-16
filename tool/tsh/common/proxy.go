@@ -230,7 +230,6 @@ func onProxyCommandDB(cf *CLIConf) error {
 			dbcmd.WithLogger(log),
 			dbcmd.WithPrintFormat(),
 			dbcmd.WithTolerateMissingCLIClient(),
-			dbcmd.WithGetDatabaseFunc(dbInfo.getDatabaseForDBCmd),
 		}
 		if opts, err = maybeAddDBUserPassword(cf, tc, dbInfo, opts); err != nil {
 			return trace.Wrap(err)
@@ -241,7 +240,7 @@ func onProxyCommandDB(cf *CLIConf) error {
 
 		commands, err := dbcmd.NewCmdBuilder(tc, profile, dbInfo.RouteToDatabase, rootCluster,
 			opts...,
-		).GetConnectCommandAlternatives(cf.Context)
+		).GetConnectCommandAlternatives()
 		if err != nil {
 			return trace.Wrap(err)
 		}
@@ -616,7 +615,7 @@ func makeBasicLocalProxyConfig(ctx context.Context, tc *libclient.TeleportClient
 	}
 }
 
-func generateDBLocalProxyCert(key *libclient.KeyRing, profile *libclient.ProfileStatus) error {
+func generateDBLocalProxyCert(key *libclient.Key, profile *libclient.ProfileStatus) error {
 	path := profile.DatabaseLocalCAPath()
 	if utils.FileExists(path) {
 		return nil
@@ -626,7 +625,7 @@ func generateDBLocalProxyCert(key *libclient.KeyRing, profile *libclient.Profile
 			CommonName:   "localhost",
 			Organization: []string{"Teleport"},
 		},
-		Signer:      key.PrivateKey.Signer,
+		Signer:      key,
 		DNSNames:    []string{"localhost"},
 		IPAddresses: []net.IP{net.ParseIP(defaults.Localhost)},
 		TTL:         defaults.CATTL,

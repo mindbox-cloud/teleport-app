@@ -28,7 +28,6 @@ import { compareByString } from 'teleport/lib/util';
 import { ApiError } from 'teleport/services/api/parseError';
 import { DatabaseLocation } from 'teleport/Discover/SelectResource';
 import { IamPolicyStatus } from 'teleport/services/databases';
-import cfg from 'teleport/config';
 
 import { matchLabels } from '../common';
 
@@ -122,7 +121,6 @@ export function useCreateDatabase() {
       ...(agentMeta as DbMeta),
       resourceName: createdDb.name,
       awsRegion: createdDb.awsRegion,
-      awsVpcId: createdDb.awsVpcId,
       agentMatcherLabels: dbPollingResult.labels,
       db: dbPollingResult,
       serviceDeployedMethod:
@@ -164,9 +162,10 @@ export function useCreateDatabase() {
       });
   }
 
-  function fetchDatabaseServers(query: string) {
+  function fetchDatabaseServers(query: string, limit: number) {
     const request = {
       query,
+      limit,
     };
     return ctx.databaseService.fetchDatabases(clusterId, request);
   }
@@ -224,7 +223,6 @@ export function useCreateDatabase() {
           awsRegion: db.awsRegion,
           agentMatcherLabels: db.labels,
           selectedAwsRdsDb: db.awsRds,
-          awsVpcId: db.awsVpcId,
         });
         setAttempt({ status: 'success' });
         return;
@@ -317,11 +315,6 @@ export function useCreateDatabase() {
   }
 
   function handleNextStep() {
-    if (isAws && !cfg.isCloud) {
-      handleNextStepForSelfHostedAwsEnrollment();
-      return;
-    }
-
     if (dbPollingResult) {
       if (
         isAws &&
@@ -333,28 +326,13 @@ export function useCreateDatabase() {
       // Skips the deploy database service step.
       return nextStep(2);
     }
-    nextStep(); // Goes to deploy database service step.
-  }
 
-  /**
-   * self hosted AWS enrollment flow has one additional step
-   * called the Configure Discovery Service. This step is
-   * only required if user enabled auto discovery.
-   * If a user is here in "useCreateDatabase" then user did not
-   * opt for auto discovery (auto discovery will auto create dbs),
-   * so we need to skip this step here.
-   */
-  function handleNextStepForSelfHostedAwsEnrollment() {
-    if (dbPollingResult) {
-      if (dbPollingResult.aws?.iamPolicyStatus === IamPolicyStatus.Success) {
-        // Skips configure discovery service, deploy db service AND
-        // setting up IAM policy step
-        return nextStep(4);
-      }
-      // Skips the configure discovery service and deploy database service step.
+    const meta = agentMeta as DbMeta;
+    if (meta.autoDiscovery && meta.serviceDeployedMethod === 'skipped') {
+      // IAM policy setup is not required for auto discover.
       return nextStep(3);
     }
-    nextStep(2); // Skips the discovery service (goes to deploy database service step).
+    nextStep(); // Goes to deploy database service step.
   }
 
   const access = ctx.storeUser.getDatabaseAccess();

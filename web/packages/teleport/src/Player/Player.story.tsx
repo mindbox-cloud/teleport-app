@@ -32,9 +32,7 @@ export default {
 
 export const SSH = () => {
   const history = createMemoryHistory({
-    initialEntries: [
-      '/web/cluster/localhost/session/123?recordingType=ssh&durationMs=1234',
-    ],
+    initialEntries: ['/web/cluster/localhost/session/123?recordingType=ssh'],
     initialIndex: 0,
   });
 

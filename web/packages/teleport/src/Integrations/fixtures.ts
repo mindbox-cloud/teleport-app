@@ -150,6 +150,17 @@ export const integrations: Integration[] = [
     statusCode: IntegrationStatusCode.Running,
     spec: { roleArn: '', issuerS3Prefix: '', issuerS3Bucket: '' },
   },
+  {
+    resourceType: 'integration',
+    name: 'aws',
+    kind: IntegrationKind.AwsOidc,
+    statusCode: IntegrationStatusCode.Running,
+    spec: {
+      roleArn: 'some-role-arn',
+      issuerS3Prefix: 'some-prefix',
+      issuerS3Bucket: 'some-bucket',
+    },
+  },
 ];
 
 export const externalAuditStorage: ExternalAuditStorage = {

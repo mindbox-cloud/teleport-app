@@ -2793,7 +2793,12 @@ func TestGCPVMDiscovery(t *testing.T) {
 // TestServer_onCreate tests the update of the discovery_group of a resource
 // when a resource already exists with the same name but an empty discovery_group.
 func TestServer_onCreate(t *testing.T) {
-	accessPoint := &fakeAccessPoint{}
+	_, awsRedshiftDB := makeRedshiftCluster(t, "aws-redshift", "us-east-1", "test")
+	_, awsRedshiftDBEmptyDiscoveryGroup := makeRedshiftCluster(t, "aws-redshift", "us-east-1", "" /* empty discovery group */)
+	accessPoint := &fakeAccessPoint{
+		kube:     mustConvertEKSToKubeCluster(t, eksMockClusters[0], "" /* empty discovery group */),
+		database: awsRedshiftDBEmptyDiscoveryGroup,
+	}
 	s := &Server{
 		Config: &Config{
 			DiscoveryGroup: "test-cluster",
@@ -2803,106 +2808,31 @@ func TestServer_onCreate(t *testing.T) {
 	}
 
 	t.Run("onCreate update kube", func(t *testing.T) {
-		// With cloud origin and an empty discovery group, it should update.
-		accessPoint.kube = mustConvertEKSToKubeCluster(t, eksMockClusters[0], "" /* empty discovery group */)
 		err := s.onKubeCreate(context.Background(), mustConvertEKSToKubeCluster(t, eksMockClusters[0], "test-cluster"))
 		require.NoError(t, err)
-		require.True(t, accessPoint.updatedKube)
+		require.True(t, accessPoint.updateKube)
 
-		// Reset the updated flag and set the registered kube cluster to have
-		// non-cloud origin. It should not update.
-		accessPoint.updatedKube = false
-		accessPoint.kube.SetOrigin(types.OriginDynamic)
-		err = s.onKubeCreate(context.Background(), mustConvertEKSToKubeCluster(t, eksMockClusters[0], "test-cluster"))
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedKube)
-
-		// Reset the updated flag and set the registered kube cluster to have
-		// an empty origin. It should not update.
-		accessPoint.updatedKube = false
-		accessPoint.kube.SetOrigin("")
-		err = s.onKubeCreate(context.Background(), mustConvertEKSToKubeCluster(t, eksMockClusters[0], "test-cluster"))
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedKube)
-
-		// Reset the update flag and set the registered kube cluster to have
-		// a non-empty discovery group. It should not update.
-		accessPoint.updatedKube = false
+		// Reset the update flag.
+		accessPoint.updateKube = false
 		accessPoint.kube = mustConvertEKSToKubeCluster(t, eksMockClusters[0], "nonEmpty")
+		// Update the kube cluster with non-empty discovery group.
 		err = s.onKubeCreate(context.Background(), mustConvertEKSToKubeCluster(t, eksMockClusters[0], "test-cluster"))
 		require.Error(t, err)
-		require.False(t, accessPoint.updatedKube)
+		require.False(t, accessPoint.updateKube)
 	})
 
 	t.Run("onCreate update database", func(t *testing.T) {
-		_, awsRedshiftDB := makeRedshiftCluster(t, "aws-redshift", "us-east-1", "test")
-		_, awsRedshiftDBEmptyDiscoveryGroup := makeRedshiftCluster(t, "aws-redshift", "us-east-1", "" /* empty discovery group */)
-
-		// With cloud origin and an empty discovery group, it should update.
-		accessPoint.database = awsRedshiftDBEmptyDiscoveryGroup
 		err := s.onDatabaseCreate(context.Background(), awsRedshiftDB)
 		require.NoError(t, err)
-		require.True(t, accessPoint.updatedDatabase)
+		require.True(t, accessPoint.updateDatabase)
 
-		// Reset the updated flag and set the db to empty discovery group
-		// but non-cloud origin. It should not update.
-		accessPoint.updatedDatabase = false
-		accessPoint.database.SetOrigin(types.OriginDynamic)
-		err = s.onDatabaseCreate(context.Background(), awsRedshiftDB)
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedDatabase)
-
-		// Reset the updated flag and set the db to empty discovery group
-		// but empty origin. It should not update.
-		accessPoint.updatedDatabase = false
-		accessPoint.database.SetOrigin("")
-		err = s.onDatabaseCreate(context.Background(), awsRedshiftDB)
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedDatabase)
-
-		// Reset the updated flag and set the registered db to have a non-empty
-		// discovery group. It should not update.
-		accessPoint.updatedDatabase = false
+		// Reset the update flag.
+		accessPoint.updateDatabase = false
 		accessPoint.database = awsRedshiftDB
+		// Update the db with non-empty discovery group.
 		err = s.onDatabaseCreate(context.Background(), awsRedshiftDB)
 		require.Error(t, err)
-		require.False(t, accessPoint.updatedDatabase)
-	})
-
-	t.Run("onCreate update app", func(t *testing.T) {
-		kubeSvc := newMockKubeService("service1", "ns1", "",
-			map[string]string{"test-label": "testval"}, nil,
-			[]corev1.ServicePort{{Port: 42, Name: "http", Protocol: corev1.ProtocolTCP}})
-
-		// With kube origin and empty discovery group, it should update.
-		accessPoint.app = mustConvertKubeServiceToApp(t, "" /*empty discovery group*/, "http", kubeSvc, kubeSvc.Spec.Ports[0])
-		err := s.onAppCreate(context.Background(), mustConvertKubeServiceToApp(t, "notEmpty", "http", kubeSvc, kubeSvc.Spec.Ports[0]))
-		require.NoError(t, err)
-		require.True(t, accessPoint.updatedApp)
-
-		// Reset the updated flag and set the app to empty discovery group
-		// but non-cloud origin. It should not update.
-		accessPoint.updatedApp = false
-		accessPoint.app.SetOrigin(types.OriginDynamic)
-		err = s.onAppCreate(context.Background(), mustConvertKubeServiceToApp(t, "notEmpty", "http", kubeSvc, kubeSvc.Spec.Ports[0]))
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedApp)
-
-		// Reset the updated flag and set the app to empty discovery group
-		// but non-cloud origin. It should not update.
-		accessPoint.updatedApp = false
-		accessPoint.app.SetOrigin("")
-		err = s.onAppCreate(context.Background(), mustConvertKubeServiceToApp(t, "notEmpty", "http", kubeSvc, kubeSvc.Spec.Ports[0]))
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedApp)
-
-		// Reset the updated flag and set the app to non-empty discovery group.
-		// It should not update.
-		accessPoint.updatedApp = false
-		accessPoint.app = mustConvertKubeServiceToApp(t, "nonEmpty", "http", kubeSvc, kubeSvc.Spec.Ports[0])
-		err = s.onAppCreate(context.Background(), mustConvertKubeServiceToApp(t, "notEmpty", "http", kubeSvc, kubeSvc.Spec.Ports[0]))
-		require.Error(t, err)
-		require.False(t, accessPoint.updatedApp)
+		require.False(t, accessPoint.updateDatabase)
 	})
 }
 
@@ -3001,12 +2931,10 @@ type fakeAccessPoint struct {
 	ping              func(context.Context) (proto.PingResponse, error)
 	enrollEKSClusters func(context.Context, *integrationpb.EnrollEKSClustersRequest, ...grpc.CallOption) (*integrationpb.EnrollEKSClustersResponse, error)
 
-	updatedKube         bool
-	updatedDatabase     bool
-	updatedApp          bool
+	updateKube          bool
+	updateDatabase      bool
 	kube                types.KubeCluster
 	database            types.Database
-	app                 types.Application
 	upsertedServerInfos chan types.ServerInfo
 	reports             map[string][]discoveryconfig.Status
 }
@@ -3053,7 +2981,7 @@ func (f *fakeAccessPoint) CreateDatabase(ctx context.Context, database types.Dat
 }
 
 func (f *fakeAccessPoint) UpdateDatabase(ctx context.Context, database types.Database) error {
-	f.updatedDatabase = true
+	f.updateDatabase = true
 	return nil
 }
 
@@ -3063,20 +2991,7 @@ func (f *fakeAccessPoint) CreateKubernetesCluster(ctx context.Context, cluster t
 
 // UpdateKubernetesCluster updates existing kubernetes cluster resource.
 func (f *fakeAccessPoint) UpdateKubernetesCluster(ctx context.Context, cluster types.KubeCluster) error {
-	f.updatedKube = true
-	return nil
-}
-
-func (f *fakeAccessPoint) GetApp(ctx context.Context, name string) (types.Application, error) {
-	return f.app, nil
-}
-
-func (f *fakeAccessPoint) CreateApp(ctx context.Context, _ types.Application) error {
-	return trace.AlreadyExists("already exists")
-}
-
-func (f *fakeAccessPoint) UpdateApp(ctx context.Context, _ types.Application) error {
-	f.updatedApp = true
+	f.updateKube = true
 	return nil
 }
 

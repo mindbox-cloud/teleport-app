@@ -17,19 +17,19 @@
 package resumption
 
 import (
-	"context"
 	"crypto/ecdh"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/netip"
 	"sync"
 	"time"
 
 	"github.com/gravitational/trace"
+	"github.com/sirupsen/logrus"
 
+	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/lib/multiplexer"
 	"github.com/gravitational/teleport/lib/sshutils"
 	"github.com/gravitational/teleport/lib/utils"
@@ -60,6 +60,8 @@ func serverVersionCRLFV1(pubKey *ecdh.PublicKey, hostID string) string {
 }
 
 type SSHServerWrapperConfig struct {
+	Log logrus.FieldLogger
+
 	// SSHServer is a function that takes ownership of a [net.Conn] and uses it
 	// as a SSH server. If the Conn is a [sshutils.SSHServerVersionOverrider],
 	// the server should use the overridden server version.
@@ -77,10 +79,16 @@ type SSHServerWrapperConfig struct {
 
 // NewSSHServerWrapper creates a [SSHServerWrapper].
 func NewSSHServerWrapper(cfg SSHServerWrapperConfig) *SSHServerWrapper {
+	if cfg.Log == nil {
+		cfg.Log = logrus.WithField(teleport.ComponentKey, Component)
+	}
+
 	return &SSHServerWrapper{
 		sshServer: cfg.SSHServer,
-		hostID:    cfg.HostID,
-		dataDir:   cfg.DataDir,
+		log:       cfg.Log,
+
+		hostID:  cfg.HostID,
+		dataDir: cfg.DataDir,
 
 		conns: make(map[resumptionToken]*connEntry),
 	}
@@ -94,6 +102,7 @@ type resumptionToken = [16]byte
 // forcibly closed.
 type SSHServerWrapper struct {
 	sshServer func(net.Conn)
+	log       logrus.FieldLogger
 
 	hostID  string
 	dataDir string
@@ -134,7 +143,7 @@ func (e *connEntry) decreaseRunning() {
 func (r *SSHServerWrapper) PreDetect(nc net.Conn) (multiplexer.PostDetectFunc, error) {
 	dhKey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
-		slog.ErrorContext(context.TODO(), "failed to generate ECDH key, proceeding without resumption (this is a bug)", "error", err)
+		r.log.WithError(err).Error("Failed to generate ECDH key, proceeding without resumption (this is a bug).")
 		// we are still responsible for sending a RFC 4253-compliant
 		// identification string as the PreDetect hook
 		return PreDetectFixedSSHVersion(sshutils.SSHVersionPrefix)(nc)
@@ -149,14 +158,14 @@ func (r *SSHServerWrapper) PreDetect(nc net.Conn) (multiplexer.PostDetectFunc, e
 		isResumeV1, err := peekPrelude(conn, clientPreludeV1)
 		if err != nil {
 			if !utils.IsOKNetworkError(err) {
-				slog.ErrorContext(context.TODO(), "error while peeking resumption prelude", "error", err)
+				r.log.WithError(err).Error("Error while peeking resumption prelude.")
 			}
 			_ = conn.Close()
 			return nil
 		}
 
 		if !isResumeV1 {
-			slog.DebugContext(context.TODO(), "returning non-resumable connection to multiplexer")
+			r.log.Debug("Returning non-resumable connection to multiplexer.")
 			return &sshVersionSkipConn{
 				Conn: conn,
 
@@ -168,7 +177,7 @@ func (r *SSHServerWrapper) PreDetect(nc net.Conn) (multiplexer.PostDetectFunc, e
 		// we successfully peeked clientPrelude, so Discard will succeed
 		_, _ = conn.Discard(len(clientPreludeV1))
 
-		slog.DebugContext(context.TODO(), "proceeding with connection resumption exchange")
+		r.log.Debug("Proceeding with connection resumption exchange.")
 		// this is the post detect hook in the multiplexer, we return nil here
 		// to signify that the connection has been hijacked
 		r.handleResumptionExchangeV1(conn, dhKey)
@@ -185,7 +194,7 @@ var _ multiplexer.PreDetectFunc = (*SSHServerWrapper)(nil).PreDetect
 func (r *SSHServerWrapper) HandleConnection(nc net.Conn) {
 	dhKey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
-		slog.ErrorContext(context.TODO(), "failed to generate ECDH key, proceeding without resumption (this is a bug)", "error", err)
+		r.log.WithError(err).Error("Failed to generate ECDH key, proceeding without resumption (this is a bug).")
 		r.sshServer(nc)
 		return
 	}
@@ -193,7 +202,7 @@ func (r *SSHServerWrapper) HandleConnection(nc net.Conn) {
 	serverVersionCRLF := serverVersionCRLFV1(dhKey.PublicKey(), r.hostID)
 	if _, err := nc.Write([]byte(serverVersionCRLF)); err != nil {
 		if !utils.IsOKNetworkError(err) {
-			slog.ErrorContext(context.TODO(), "error while sending SSH identification string", "error", err)
+			r.log.WithError(err).Warn("Error while sending SSH identification string.")
 		}
 		_ = nc.Close()
 		return
@@ -204,14 +213,14 @@ func (r *SSHServerWrapper) HandleConnection(nc net.Conn) {
 	isResumeV1, err := peekPrelude(conn, clientPreludeV1)
 	if err != nil {
 		if !utils.IsOKNetworkError(err) {
-			slog.ErrorContext(context.TODO(), "error while peeking resumption prelude", "error", err)
+			r.log.WithError(err).Error("Error while peeking resumption prelude.")
 		}
 		_ = conn.Close()
 		return
 	}
 
 	if !isResumeV1 {
-		slog.ErrorContext(context.TODO(), "returning non-resumable connection to multiplexer")
+		r.log.Debug("Returning non-resumable connection to multiplexer.")
 		r.sshServer(&sshVersionSkipConn{
 			Conn: conn,
 
@@ -224,6 +233,6 @@ func (r *SSHServerWrapper) HandleConnection(nc net.Conn) {
 	// we successfully peeked clientPrelude, so Discard will succeed
 	_, _ = conn.Discard(len(clientPreludeV1))
 
-	slog.DebugContext(context.TODO(), "proceeding with connection resumption exchange")
+	r.log.Debug("Proceeding with connection resumption exchange.")
 	r.handleResumptionExchangeV1(conn, dhKey)
 }

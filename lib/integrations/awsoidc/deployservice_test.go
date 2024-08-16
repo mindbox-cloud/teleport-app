@@ -32,7 +32,6 @@ import (
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/automaticupgrades"
-	"github.com/gravitational/teleport/lib/integrations/awsoidc/tags"
 )
 
 func TestDeployServiceRequest(t *testing.T) {
@@ -153,7 +152,7 @@ func TestDeployServiceRequest(t *testing.T) {
 				TaskName:                stringPointer("mycluster-teleport-database-service"),
 				DeploymentJoinTokenName: "discover-aws-oidc-iam-token",
 				IntegrationName:         "teleportdev",
-				ResourceCreationTags: tags.AWSTags{
+				ResourceCreationTags: AWSTags{
 					"teleport.dev/origin":      "integration_awsoidc",
 					"teleport.dev/cluster":     "mycluster",
 					"teleport.dev/integration": "teleportdev",

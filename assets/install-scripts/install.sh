@@ -220,8 +220,7 @@ install_via_curl() {
 
   set -x
   cd "$TEMP_DIR"
-  # shellcheck disable=SC2086
-  $SUDO $SHA_COMMAND -c "$TMP_CHECKSUM"
+  $SUDO "$SHA_COMMAND" -c "$TMP_CHECKSUM"
   cd -
 
   $SUDO tar -xzf "${TEMP_DIR}/${TELEPORT_FILENAME}" -C "$TEMP_DIR"

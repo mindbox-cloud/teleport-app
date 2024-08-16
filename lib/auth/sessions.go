@@ -20,30 +20,21 @@ package auth
 
 import (
 	"context"
-	"crypto"
 	"time"
 
 	"github.com/gravitational/trace"
-	"golang.org/x/crypto/ssh"
 
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/client/proto"
-	"github.com/gravitational/teleport/api/constants"
 	apidefaults "github.com/gravitational/teleport/api/defaults"
-	devicepb "github.com/gravitational/teleport/api/gen/proto/go/teleport/devicetrust/v1"
 	mfav1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/mfa/v1"
 	"github.com/gravitational/teleport/api/types"
-	apievents "github.com/gravitational/teleport/api/types/events"
 	"github.com/gravitational/teleport/api/utils/keys"
-	"github.com/gravitational/teleport/entitlements"
-	"github.com/gravitational/teleport/lib/cryptosuites"
+	"github.com/gravitational/teleport/lib/auth/native"
 	"github.com/gravitational/teleport/lib/defaults"
-	dtconfig "github.com/gravitational/teleport/lib/devicetrust/config"
-	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/jwt"
 	"github.com/gravitational/teleport/lib/modules"
 	"github.com/gravitational/teleport/lib/services"
-	"github.com/gravitational/teleport/lib/sshutils"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 )
@@ -55,9 +46,6 @@ type NewWebSessionRequest struct {
 	User string
 	// LoginIP is an observed IP of the client, it will be embedded into certificates.
 	LoginIP string
-	// LoginUserAgent is the user agent of the client's browser, as captured by
-	// the Proxy.
-	LoginUserAgent string
 	// Roles optionally lists additional user roles
 	Roles []string
 	// Traits optionally lists role traits
@@ -75,23 +63,10 @@ type NewWebSessionRequest struct {
 	// This should only be set to true for web sessions that are purely in the purview of the Proxy
 	// and Auth services. Users should never have direct access to attested web sessions.
 	AttestWebSession bool
-	// SSHPrivateKey is a specific private key to use when generating the web
-	// sessions' SSH certificates.
-	// This should be provided when extending an attested web session in order
-	// to maintain the session attested status.
-	SSHPrivateKey *keys.PrivateKey
-	// TLSPrivateKey is a specific private key to use when generating the web
-	// sessions' SSH certificates.
-	// This should be provided when extending an attested web session in order
-	// to maintain the session attested status.
-	TLSPrivateKey *keys.PrivateKey
-	// CreateDeviceWebToken informs Auth to issue a DeviceWebToken when creating
-	// this session.
-	// A DeviceWebToken must only be issued for users that have been authenticated
-	// in the same RPC.
-	// May only be set internally by Auth (and Auth-related logic), not allowed
-	// for external requests.
-	CreateDeviceWebToken bool
+	// PrivateKey is a specific private key to use when generating the web sessions' certificates.
+	// This should be provided when extending an attested web session in order to maintain the
+	// session attested status.
+	PrivateKey *keys.PrivateKey
 }
 
 // CheckAndSetDefaults validates the request and sets defaults.
@@ -112,7 +87,7 @@ func (r *NewWebSessionRequest) CheckAndSetDefaults() error {
 }
 
 func (a *Server) CreateWebSessionFromReq(ctx context.Context, req NewWebSessionRequest) (types.WebSession, error) {
-	session, sessionChecker, err := a.newWebSession(ctx, req, nil /* opts */)
+	session, err := a.newWebSession(ctx, req, nil /* opts */)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -122,94 +97,7 @@ func (a *Server) CreateWebSessionFromReq(ctx context.Context, req NewWebSessionR
 		return nil, trace.Wrap(err)
 	}
 
-	// Issue and assign the DeviceWebToken, but never persist it with the
-	// session.
-	if req.CreateDeviceWebToken {
-		if err := a.augmentSessionForDeviceTrust(ctx, session, req.LoginIP, req.LoginUserAgent); err != nil {
-			return nil, trace.Wrap(err)
-		}
-	}
-
-	// Assign the TrustedDeviceRequirement to the session, but do not persist it,
-	// so only the initial session gets it.
-	// This avoids persisting a possibly stale value.
-	if tdr, err := a.calculateTrustedDeviceMode(ctx, func() ([]types.Role, error) {
-		return sessionChecker.Roles(), nil
-	}); err != nil {
-		log.
-			WithError(err).
-			Warnf("Failed to calculate trusted device mode for session")
-	} else {
-		session.SetTrustedDeviceRequirement(tdr)
-	}
-
 	return session, nil
-}
-
-func (a *Server) augmentSessionForDeviceTrust(
-	ctx context.Context,
-	session types.WebSession,
-	loginIP, userAgent string,
-) error {
-	// IP and user agent are mandatory for device web authentication.
-	if loginIP == "" || userAgent == "" {
-		return nil
-	}
-
-	// Create the device trust DeviceWebToken.
-	// We only get a token if the server is enabled for Device Trust and the user
-	// has a suitable trusted device.
-	webToken, err := a.createDeviceWebToken(ctx, &devicepb.DeviceWebToken{
-		WebSessionId:     session.GetName(),
-		BrowserUserAgent: userAgent,
-		BrowserIp:        loginIP,
-		User:             session.GetUser(),
-	})
-	switch {
-	case err != nil:
-		log.WithError(err).Warn("Failed to create DeviceWebToken for user")
-	case webToken != nil: // May be nil even if err==nil.
-		session.SetDeviceWebToken(&types.DeviceWebToken{
-			Id:    webToken.Id,
-			Token: webToken.Token,
-		})
-	}
-
-	return nil
-}
-
-func (a *Server) calculateTrustedDeviceMode(
-	ctx context.Context,
-	getRoles func() ([]types.Role, error),
-) (types.TrustedDeviceRequirement, error) {
-	const unspecified = types.TrustedDeviceRequirement_TRUSTED_DEVICE_REQUIREMENT_UNSPECIFIED
-
-	// Don't evaluate for OSS.
-	if !modules.GetModules().IsEnterpriseBuild() {
-		return unspecified, nil
-	}
-
-	// Required by cluster mode?
-	ap, err := a.GetAuthPreference(ctx)
-	if err != nil {
-		return unspecified, trace.Wrap(err)
-	}
-	if dtconfig.GetEffectiveMode(ap.GetDeviceTrust()) == constants.DeviceTrustModeRequired {
-		return types.TrustedDeviceRequirement_TRUSTED_DEVICE_REQUIREMENT_REQUIRED, nil
-	}
-
-	// Required by roles?
-	roles, err := getRoles()
-	if err != nil {
-		return unspecified, trace.Wrap(err)
-	}
-	for _, role := range roles {
-		if role.GetOptions().DeviceTrustMode == constants.DeviceTrustModeRequired {
-			return types.TrustedDeviceRequirement_TRUSTED_DEVICE_REQUIREMENT_REQUIRED, nil
-		}
-	}
-
-	return types.TrustedDeviceRequirement_TRUSTED_DEVICE_REQUIREMENT_NOT_REQUIRED, nil
 }
 
 // newWebSessionOpts are WebSession creation options exclusive to Auth.
@@ -227,10 +115,10 @@ func (a *Server) newWebSession(
 	ctx context.Context,
 	req NewWebSessionRequest,
 	opts *newWebSessionOpts,
-) (types.WebSession, services.AccessChecker, error) {
+) (types.WebSession, error) {
 	userState, err := a.GetUserOrLoginState(ctx, req.User)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	if req.LoginIP == "" {
 		// TODO(antonam): consider turning this into error after all use cases are covered (before v14.0 testplan)
@@ -239,7 +127,7 @@ func (a *Server) newWebSession(
 
 	clusterName, err := a.GetClusterName()
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 
 	checker, err := services.NewAccessChecker(&services.AccessInfo{
@@ -248,24 +136,18 @@ func (a *Server) newWebSession(
 		AllowedResourceIDs: req.RequestedResourceIDs,
 	}, clusterName.GetClusterName(), a)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 
 	idleTimeout, err := a.getWebIdleTimeout(ctx)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 
-	var sshKey, tlsKey crypto.Signer
-	if req.SSHPrivateKey != nil || req.TLSPrivateKey != nil {
-		if req.SSHPrivateKey == nil || req.TLSPrivateKey == nil {
-			return nil, nil, trace.BadParameter("invalid to set only one of SSHPrivateKey or TLSPrivateKey (this is a bug)")
-		}
-		sshKey, tlsKey = req.SSHPrivateKey.Signer, req.TLSPrivateKey.Signer
-	} else {
-		sshKey, tlsKey, err = cryptosuites.GenerateUserSSHAndTLSKey(ctx, a)
+	if req.PrivateKey == nil {
+		req.PrivateKey, err = native.GeneratePrivateKey()
 		if err != nil {
-			return nil, nil, trace.Wrap(err)
+			return nil, trace.Wrap(err)
 		}
 	}
 
@@ -275,36 +157,22 @@ func (a *Server) newWebSession(
 	}
 
 	if req.AttestWebSession {
-		for _, pubKey := range []crypto.PublicKey{sshKey.Public(), tlsKey.Public()} {
-			// Upsert web session attestation data so that this key's certs
-			// will be marked with the web session private key policy.
-			webAttData, err := services.NewWebSessionAttestationData(pubKey)
-			if err != nil {
-				return nil, nil, trace.Wrap(err)
-			}
-			if err = a.UpsertKeyAttestationData(ctx, webAttData, sessionTTL); err != nil {
-				return nil, nil, trace.Wrap(err)
-			}
+		// Upsert web session attestation data so that this key's certs
+		// will be marked with the web session private key policy.
+		webAttData, err := services.NewWebSessionAttestationData(req.PrivateKey.Public())
+		if err != nil {
+			return nil, trace.Wrap(err)
 		}
-	}
-
-	sshPub, err := ssh.NewPublicKey(sshKey.Public())
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-	sshAuthorizedKey := ssh.MarshalAuthorizedKey(sshPub)
-
-	tlsPublicKeyPEM, err := keys.MarshalPublicKey(tlsKey.Public())
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		if err = a.UpsertKeyAttestationData(ctx, webAttData, sessionTTL); err != nil {
+			return nil, trace.Wrap(err)
+		}
 	}
 
 	certReq := certRequest{
 		user:           userState,
 		loginIP:        req.LoginIP,
 		ttl:            sessionTTL,
-		sshPublicKey:   sshAuthorizedKey,
-		tlsPublicKey:   tlsPublicKeyPEM,
+		publicKey:      req.PrivateKey.MarshalSSHPublicKey(),
 		checker:        checker,
 		traits:         req.Traits,
 		activeRequests: services.RequestIDs{AccessRequests: req.AccessRequests},
@@ -318,15 +186,15 @@ func (a *Server) newWebSession(
 
 	certs, err := a.generateUserCert(ctx, certReq)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	token, err := utils.CryptoRandomHex(defaults.SessionTokenBytes)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	bearerToken, err := utils.CryptoRandomHex(defaults.SessionTokenBytes)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
 	bearerTokenTTL := min(sessionTTL, defaults.BearerTokenTTL)
 
@@ -335,19 +203,9 @@ func (a *Server) newWebSession(
 		startTime = req.LoginTime
 	}
 
-	sshPrivateKeyPEM, err := keys.MarshalPrivateKey(sshKey)
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-	tlsPrivateKeyPEM, err := keys.MarshalPrivateKey(tlsKey)
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-
 	sessionSpec := types.WebSessionSpecV2{
 		User:                req.User,
-		Priv:                sshPrivateKeyPEM,
-		TLSPriv:             tlsPrivateKeyPEM,
+		Priv:                req.PrivateKey.PrivateKeyPEM(),
 		Pub:                 certs.SSH,
 		TLSCert:             certs.TLS,
 		Expires:             startTime.UTC().Add(sessionTTL),
@@ -361,9 +219,9 @@ func (a *Server) newWebSession(
 
 	sess, err := types.NewWebSession(token, types.KindWebSession, sessionSpec)
 	if err != nil {
-		return nil, nil, trace.Wrap(err)
+		return nil, trace.Wrap(err)
 	}
-	return sess, checker, nil
+	return sess, nil
 }
 
 func (a *Server) getWebIdleTimeout(ctx context.Context) (time.Duration, error) {
@@ -409,14 +267,6 @@ type NewAppSessionRequest struct {
 	MFAVerified string
 	// DeviceExtensions holds device-aware user certificate extensions.
 	DeviceExtensions DeviceExtensions
-	// AppName is the name of the app.
-	AppName string
-	// AppURI is the URI of the app. This is the internal endpoint where the application is running and isn't user-facing.
-	AppURI string
-	// Identity is the identity of the user.
-	Identity tlsca.Identity
-	// ClientAddr is a client (user's) address.
-	ClientAddr string
 }
 
 // CreateAppSession creates and inserts a services.WebSession into the
@@ -424,7 +274,7 @@ type NewAppSessionRequest struct {
 // The certificate is used for all access requests, which is where access
 // control is enforced.
 func (a *Server) CreateAppSession(ctx context.Context, req *proto.CreateAppSessionRequest, identity tlsca.Identity, checker services.AccessChecker) (types.WebSession, error) {
-	if !modules.GetModules().Features().GetEntitlement(entitlements.App).Enabled {
+	if !modules.GetModules().Features().App {
 		return nil, trace.AccessDenied(
 			"this Teleport cluster is not licensed for application access, please contact the cluster administrator")
 	}
@@ -475,8 +325,6 @@ func (a *Server) CreateAppSession(ctx context.Context, req *proto.CreateAppSessi
 		AzureIdentity:     req.AzureIdentity,
 		GCPServiceAccount: req.GCPServiceAccount,
 		MFAVerified:       verifiedMFADeviceID,
-		AppName:           req.AppName,
-		AppURI:            req.URI,
 		DeviceExtensions:  DeviceExtensions(identity.DeviceExtensions),
 	})
 	if err != nil {
@@ -487,13 +335,9 @@ func (a *Server) CreateAppSession(ctx context.Context, req *proto.CreateAppSessi
 }
 
 func (a *Server) CreateAppSessionFromReq(ctx context.Context, req NewAppSessionRequest) (types.WebSession, error) {
-	if !modules.GetModules().Features().GetEntitlement(entitlements.App).Enabled {
+	if !modules.GetModules().Features().App {
 		return nil, trace.AccessDenied(
 			"this Teleport cluster is not licensed for application access, please contact the cluster administrator")
-	}
-
-	if req.CreateDeviceWebToken {
-		return nil, trace.BadParameter("parameter CreateDeviceWebToken disallowed for App Sessions")
 	}
 
 	user, err := a.GetUserOrLoginState(ctx, req.User)
@@ -523,7 +367,7 @@ func (a *Server) CreateAppSessionFromReq(ctx context.Context, req NewAppSessionR
 	}
 
 	// Create certificate for this session.
-	priv, err := cryptosuites.GenerateKey(ctx, a, cryptosuites.UserTLS)
+	priv, err := native.GeneratePrivateKey()
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -540,19 +384,10 @@ func (a *Server) CreateAppSessionFromReq(ctx context.Context, req NewAppSessionR
 		}
 	}
 
-	privateKeyPEM, err := keys.MarshalPrivateKey(priv)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	tlsPublicKey, err := keys.MarshalPublicKey(priv.Public())
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
 	certs, err := a.generateUserCert(ctx, certRequest{
 		user:           user,
 		loginIP:        req.LoginIP,
-		tlsPublicKey:   tlsPublicKey,
+		publicKey:      priv.MarshalSSHPublicKey(),
 		checker:        checker,
 		ttl:            req.SessionTTL,
 		traits:         req.Traits,
@@ -580,7 +415,8 @@ func (a *Server) CreateAppSessionFromReq(ctx context.Context, req NewAppSessionR
 	}
 	session, err := types.NewWebSession(sessionID, types.KindAppSession, types.WebSessionSpecV2{
 		User:        req.User,
-		TLSPriv:     privateKeyPEM,
+		Priv:        priv.PrivateKeyPEM(),
+		Pub:         certs.SSH,
 		TLSCert:     certs.TLS,
 		LoginTime:   a.clock.Now().UTC(),
 		Expires:     a.clock.Now().UTC().Add(req.SessionTTL),
@@ -594,42 +430,6 @@ func (a *Server) CreateAppSessionFromReq(ctx context.Context, req NewAppSessionR
 	}
 	log.Debugf("Generated application web session for %v with TTL %v.", req.User, req.SessionTTL)
 	UserLoginCount.Inc()
-
-	userMetadata := req.Identity.GetUserMetadata()
-	userMetadata.User = session.GetUser()
-	userMetadata.AWSRoleARN = req.AWSRoleARN
-
-	err = a.emitter.EmitAuditEvent(a.closeCtx, &apievents.AppSessionStart{
-		Metadata: apievents.Metadata{
-			Type:        events.AppSessionStartEvent,
-			Code:        events.AppSessionStartCode,
-			ClusterName: req.ClusterName,
-		},
-		ServerMetadata: apievents.ServerMetadata{
-			ServerVersion:   teleport.Version,
-			ServerID:        a.ServerID,
-			ServerNamespace: apidefaults.Namespace,
-		},
-		SessionMetadata: apievents.SessionMetadata{
-			SessionID:        session.GetName(),
-			WithMFA:          req.MFAVerified,
-			PrivateKeyPolicy: string(req.Identity.PrivateKeyPolicy),
-		},
-		UserMetadata: userMetadata,
-		ConnectionMetadata: apievents.ConnectionMetadata{
-			RemoteAddr: req.ClientAddr,
-		},
-		PublicAddr: req.PublicAddr,
-		AppMetadata: apievents.AppMetadata{
-			AppURI:        req.AppURI,
-			AppPublicAddr: req.PublicAddr,
-			AppName:       req.AppName,
-		},
-	})
-	if err != nil {
-		log.WithError(err).Warn("Failed to emit app session start event")
-	}
-
 	return session, nil
 }
 
@@ -698,32 +498,17 @@ func (a *Server) CreateSessionCert(userState services.UserState, sessionTTL time
 		return nil, nil, trace.Wrap(err)
 	}
 
-	// TODO(nklaassen): separate SSH and TLS keys. For now they are the same.
-	sshPublicKey := publicKey
-	cryptoPubKey, err := sshutils.CryptoPublicKey(publicKey)
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-	tlsPublicKey, err := keys.MarshalPublicKey(cryptoPubKey)
-	if err != nil {
-		return nil, nil, trace.Wrap(err)
-	}
-	sshPublicKeyAttestationStatement := attestationReq
-	tlsPublicKeyAttestationStatement := attestationReq
-
 	certs, err := a.generateUserCert(ctx, certRequest{
-		user:                             userState,
-		ttl:                              sessionTTL,
-		sshPublicKey:                     sshPublicKey,
-		tlsPublicKey:                     tlsPublicKey,
-		sshPublicKeyAttestationStatement: sshPublicKeyAttestationStatement,
-		tlsPublicKeyAttestationStatement: tlsPublicKeyAttestationStatement,
-		compatibility:                    compatibility,
-		checker:                          checker,
-		traits:                           userState.GetTraits(),
-		routeToCluster:                   routeToCluster,
-		kubernetesCluster:                kubernetesCluster,
-		loginIP:                          loginIP,
+		user:                 userState,
+		ttl:                  sessionTTL,
+		publicKey:            publicKey,
+		compatibility:        compatibility,
+		checker:              checker,
+		traits:               userState.GetTraits(),
+		routeToCluster:       routeToCluster,
+		kubernetesCluster:    kubernetesCluster,
+		attestationStatement: attestationReq,
+		loginIP:              loginIP,
 	})
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
@@ -735,7 +520,7 @@ func (a *Server) CreateSessionCert(userState services.UserState, sessionTTL time
 func (a *Server) CreateSnowflakeSession(ctx context.Context, req types.CreateSnowflakeSessionRequest,
 	identity tlsca.Identity, checker services.AccessChecker,
 ) (types.WebSession, error) {
-	if !modules.GetModules().Features().GetEntitlement(entitlements.DB).Enabled {
+	if !modules.GetModules().Features().DB {
 		return nil, trace.AccessDenied(
 			"this Teleport cluster is not licensed for database access, please contact the cluster administrator")
 	}

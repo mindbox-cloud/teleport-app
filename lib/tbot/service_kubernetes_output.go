@@ -289,7 +289,7 @@ type kubernetesStatus struct {
 	teleportClusterName   string
 	kubernetesClusterName string
 	tlsServerName         string
-	credentials           *client.KeyRing
+	credentials           *client.Key
 }
 
 func generateKubeConfigWithoutPlugin(ks *kubernetesStatus) (*clientcmdapi.Config, error) {
@@ -313,7 +313,7 @@ func generateKubeConfigWithoutPlugin(ks *kubernetesStatus) (*clientcmdapi.Config
 
 	config.AuthInfos[contextName] = &clientcmdapi.AuthInfo{
 		ClientCertificateData: ks.credentials.TLSCert,
-		ClientKeyData:         ks.credentials.PrivateKey.PrivateKeyPEM(),
+		ClientKeyData:         ks.credentials.PrivateKeyPEM(),
 	}
 
 	// Last, create a context linking the cluster to the auth info.

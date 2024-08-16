@@ -70,8 +70,8 @@ import (
 	wantypes "github.com/gravitational/teleport/lib/auth/webauthntypes"
 	"github.com/gravitational/teleport/lib/authz"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/backend/lite"
 	"github.com/gravitational/teleport/lib/backend/memory"
-	"github.com/gravitational/teleport/lib/cryptosuites"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/events/eventstest"
@@ -85,11 +85,10 @@ import (
 )
 
 type testPack struct {
-	bk             backend.Backend
-	versionStorage VersionStorage
-	clusterName    types.ClusterName
-	a              *Server
-	mockEmitter    *eventstest.MockRecorderEmitter
+	bk          backend.Backend
+	clusterName types.ClusterName
+	a           *Server
+	mockEmitter *eventstest.MockRecorderEmitter
 }
 
 func newTestPack(
@@ -99,7 +98,7 @@ func newTestPack(
 		p   testPack
 		err error
 	)
-	p.bk, err = memory.New(memory.Config{})
+	p.bk, err = lite.NewWithConfig(ctx, lite.Config{Path: dataDir})
 	if err != nil {
 		return p, trace.Wrap(err)
 	}
@@ -110,18 +109,12 @@ func newTestPack(
 		return p, trace.Wrap(err)
 	}
 
-	p.versionStorage = NewFakeTeleportVersion()
-
 	p.mockEmitter = &eventstest.MockRecorderEmitter{}
 	authConfig := &InitConfig{
-		DataDir:        dataDir,
-		Backend:        p.bk,
-		VersionStorage: p.versionStorage,
-		ClusterName:    p.clusterName,
-		Authority:      testauthority.New(),
-		Emitter:        p.mockEmitter,
-		// This uses lower bcrypt costs for faster tests.
-		Identity:               local.NewTestIdentityService(p.bk),
+		Backend:                p.bk,
+		ClusterName:            p.clusterName,
+		Authority:              testauthority.New(),
+		Emitter:                p.mockEmitter,
 		SkipPeriodicOperations: true,
 	}
 	p.a, err = NewServer(authConfig, opts...)
@@ -224,102 +217,41 @@ func TestSessions(t *testing.T) {
 	user := "user1"
 	pass := []byte("abcdef123456")
 
-	_, _, err := CreateUserAndRole(s.a, user, []string{user}, nil)
+	_, err := s.a.AuthenticateWebUser(ctx, authclient.AuthenticateUserRequest{
+		Username: user,
+		Pass:     &authclient.PassCreds{Password: pass},
+	})
+	require.Error(t, err)
+
+	_, _, err = CreateUserAndRole(s.a, user, []string{user}, nil)
 	require.NoError(t, err)
 
 	err = s.a.UpsertPassword(user, pass)
 	require.NoError(t, err)
 
-	authPref, err := s.a.GetAuthPreference(ctx)
+	ws, err := s.a.AuthenticateWebUser(ctx, authclient.AuthenticateUserRequest{
+		Username: user,
+		Pass:     &authclient.PassCreds{Password: pass},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, ws)
+
+	out, err := s.a.GetWebSessionInfo(ctx, user, ws.GetName())
+	require.NoError(t, err)
+	ws.SetPriv(nil)
+	require.Empty(t, cmp.Diff(ws, out, cmpopts.IgnoreFields(types.Metadata{}, "Revision")))
+
+	err = s.a.WebSessions().Delete(ctx, types.DeleteWebSessionRequest{
+		User:      user,
+		SessionID: ws.GetName(),
+	})
 	require.NoError(t, err)
 
-	for _, tc := range []struct {
-		desc                string
-		suite               types.SignatureAlgorithmSuite
-		expectSSHPubKeyType string
-		expectTLSPubKeyAlgo x509.PublicKeyAlgorithm
-		expectKeysToMatch   bool
-	}{
-		{
-			desc:                "unspecified",
-			suite:               types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_UNSPECIFIED,
-			expectSSHPubKeyType: "ssh-rsa-cert-v01@openssh.com",
-			expectTLSPubKeyAlgo: x509.RSA,
-			expectKeysToMatch:   true,
-		},
-		{
-			desc:                "legacy",
-			suite:               types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_LEGACY,
-			expectSSHPubKeyType: "ssh-rsa-cert-v01@openssh.com",
-			expectTLSPubKeyAlgo: x509.RSA,
-			expectKeysToMatch:   true,
-		},
-		{
-			desc:                "balanced-v1",
-			suite:               types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_BALANCED_V1,
-			expectSSHPubKeyType: "ssh-ed25519-cert-v01@openssh.com",
-			expectTLSPubKeyAlgo: x509.ECDSA,
-		},
-		{
-			desc:                "fips-v1",
-			suite:               types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_FIPS_V1,
-			expectSSHPubKeyType: "ecdsa-sha2-nistp256-cert-v01@openssh.com",
-			expectTLSPubKeyAlgo: x509.ECDSA,
-		},
-		{
-			desc:                "hsm-v1",
-			suite:               types.SignatureAlgorithmSuite_SIGNATURE_ALGORITHM_SUITE_HSM_V1,
-			expectSSHPubKeyType: "ssh-ed25519-cert-v01@openssh.com",
-			expectTLSPubKeyAlgo: x509.ECDSA,
-		},
-	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			authPref.SetSignatureAlgorithmSuite(tc.suite)
-			_, err := s.a.UpsertAuthPreference(ctx, authPref)
-			require.NoError(t, err)
-
-			ws, err := s.a.AuthenticateWebUser(ctx, authclient.AuthenticateUserRequest{
-				Username: user,
-				Pass:     &authclient.PassCreds{Password: pass},
-			})
-			require.NoError(t, err)
-			require.NotNil(t, ws)
-
-			if tc.expectKeysToMatch {
-				assert.Equal(t, ws.GetSSHPriv(), ws.GetTLSPriv())
-			} else {
-				assert.NotEqual(t, ws.GetSSHPriv(), ws.GetTLSPriv())
-			}
-
-			pub, _, _, _, err := ssh.ParseAuthorizedKey(ws.GetPub())
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectSSHPubKeyType, pub.Type())
-
-			tlsCert, _ := parseX509PEMAndIdentity(t, ws.GetTLSCert())
-			assert.Equal(t, tc.expectTLSPubKeyAlgo, tlsCert.PublicKeyAlgorithm)
-
-			// GetWebSessionInfo and make sure it matches, with private keys removed.
-			out, err := s.a.GetWebSessionInfo(ctx, user, ws.GetName())
-			require.NoError(t, err)
-			assert.Empty(t, out.GetSSHPriv())
-			assert.Empty(t, out.GetTLSPriv())
-			assert.Empty(t, cmp.Diff(ws, out,
-				cmpopts.IgnoreFields(types.Metadata{}, "Revision"),
-				cmpopts.IgnoreFields(types.WebSessionSpecV2{}, "Priv", "TLSPriv")))
-
-			err = s.a.WebSessions().Delete(ctx, types.DeleteWebSessionRequest{
-				User:      user,
-				SessionID: ws.GetName(),
-			})
-			require.NoError(t, err)
-
-			_, err = s.a.GetWebSession(ctx, types.GetWebSessionRequest{
-				User:      user,
-				SessionID: ws.GetName(),
-			})
-			assert.True(t, trace.IsNotFound(err), "%#v", err)
-		})
-	}
+	_, err = s.a.GetWebSession(ctx, types.GetWebSessionRequest{
+		User:      user,
+		SessionID: ws.GetName(),
+	})
+	require.True(t, trace.IsNotFound(err), "%#v", err)
 }
 
 func TestAuthenticateWebUser_deviceWebToken(t *testing.T) {
@@ -1178,7 +1110,6 @@ func TestUpdateConfig(t *testing.T) {
 	authConfig := &InitConfig{
 		ClusterName:            clusterName,
 		Backend:                s.bk,
-		VersionStorage:         s.versionStorage,
 		Authority:              testauthority.New(),
 		SkipPeriodicOperations: true,
 	}
@@ -1206,7 +1137,7 @@ func TestUpdateConfig(t *testing.T) {
 	require.Equal(t, cn.GetClusterName(), s.clusterName.GetClusterName())
 	st, err = s.a.GetStaticTokens()
 	require.NoError(t, err)
-	require.Equal(t, st.GetStaticTokens(), types.ProvisionTokensFromStatic([]types.ProvisionTokenV1{{
+	require.Equal(t, st.GetStaticTokens(), types.ProvisionTokensFromV1([]types.ProvisionTokenV1{{
 		Token: "bar",
 		Roles: types.SystemRoles{types.SystemRole("baz")},
 	}}))
@@ -1215,7 +1146,7 @@ func TestUpdateConfig(t *testing.T) {
 	// new static tokens
 	st, err = authServer.GetStaticTokens()
 	require.NoError(t, err)
-	require.Equal(t, st.GetStaticTokens(), types.ProvisionTokensFromStatic([]types.ProvisionTokenV1{{
+	require.Equal(t, st.GetStaticTokens(), types.ProvisionTokensFromV1([]types.ProvisionTokenV1{{
 		Token: "bar",
 		Roles: types.SystemRoles{types.SystemRole("baz")},
 	}}))
@@ -1778,7 +1709,7 @@ func TestServer_AugmentContextUserCertificates_errors(t *testing.T) {
 	_, sshRaw11, _, _, _ := authenticate(t, user1.GetName(), pass1)
 
 	// wrongKey is used to represent an invalid/unknown CA.
-	wrongKey, err := cryptosuites.GenerateKeyWithAlgorithm(cryptosuites.ECDSAP256)
+	wrongKey, err := rsa.GenerateKey(rand.Reader, 2048 /* bits */)
 	require.NoError(t, err, "GenerateKey failed")
 
 	// Build an invalid version of xCert1 (signed using wrongKey).
@@ -2569,12 +2500,13 @@ func TestGenerateUserCertWithCertExtension(t *testing.T) {
 	accessChecker, err := services.NewAccessChecker(accessInfo, p.clusterName.GetClusterName(), p.a)
 	require.NoError(t, err)
 
-	_, sshPubKey, _, tlsPubKey := newSSHAndTLSKeyPairs(t)
+	keygen := testauthority.New()
+	_, pub, err := keygen.GetNewKeyPairFromPool()
+	require.NoError(t, err)
 	certReq := certRequest{
-		user:         user,
-		checker:      accessChecker,
-		sshPublicKey: sshPubKey,
-		tlsPublicKey: tlsPubKey,
+		user:      user,
+		checker:   accessChecker,
+		publicKey: pub,
 	}
 	certs, err := p.a.generateUserCert(ctx, certReq)
 	require.NoError(t, err)
@@ -2681,14 +2613,14 @@ func TestGenerateUserCertWithLocks(t *testing.T) {
 	const mfaID = "test-mfa-id"
 	const requestID = "test-access-request"
 	const deviceID = "deviceid1"
-
-	_, sshPubKey, _, tlsPubKey := newSSHAndTLSKeyPairs(t)
+	keygen := testauthority.New()
+	_, pub, err := keygen.GetNewKeyPairFromPool()
+	require.NoError(t, err)
 	certReq := certRequest{
 		user:           user,
 		checker:        accessChecker,
 		mfaVerified:    mfaID,
-		sshPublicKey:   sshPubKey,
-		tlsPublicKey:   tlsPubKey,
+		publicKey:      pub,
 		activeRequests: services.RequestIDs{AccessRequests: []string{requestID}},
 		deviceExtensions: DeviceExtensions{
 			DeviceID:     deviceID,
@@ -2786,15 +2718,16 @@ func TestGenerateUserCertWithUserLoginState(t *testing.T) {
 	accessInfo := services.AccessInfoFromUserState(userState)
 	accessChecker, err := services.NewAccessChecker(accessInfo, p.clusterName.GetClusterName(), p.a)
 	require.NoError(t, err)
-	_, sshPubKey, _, tlsPubKey := newSSHAndTLSKeyPairs(t)
+	keygen := testauthority.New()
+	_, pub, err := keygen.GetNewKeyPairFromPool()
+	require.NoError(t, err)
 
 	// Generate cert with no user login state.
 	certReq := certRequest{
-		user:         user,
-		checker:      accessChecker,
-		sshPublicKey: sshPubKey,
-		tlsPublicKey: tlsPubKey,
-		traits:       accessChecker.Traits(),
+		user:      user,
+		checker:   accessChecker,
+		publicKey: pub,
+		traits:    accessChecker.Traits(),
 	}
 	resp, err := p.a.generateUserCert(ctx, certReq)
 	require.NoError(t, err)
@@ -2848,11 +2781,10 @@ func TestGenerateUserCertWithUserLoginState(t *testing.T) {
 	require.NoError(t, err)
 
 	certReq = certRequest{
-		user:         user,
-		checker:      accessChecker,
-		sshPublicKey: sshPubKey,
-		tlsPublicKey: tlsPubKey,
-		traits:       accessChecker.Traits(),
+		user:      user,
+		checker:   accessChecker,
+		publicKey: pub,
+		traits:    accessChecker.Traits(),
 	}
 
 	resp, err = p.a.generateUserCert(ctx, certReq)
@@ -2894,12 +2826,16 @@ func TestGenerateUserCertWithHardwareKeySupport(t *testing.T) {
 	accessChecker, err := services.NewAccessChecker(accessInfo, p.clusterName.GetClusterName(), p.a)
 	require.NoError(t, err)
 
-	_, sshPubKey, _, tlsPubKey := newSSHAndTLSKeyPairs(t)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	key, err := keys.NewPrivateKey(priv, nil)
+	require.NoError(t, err)
+
+	require.NoError(t, err)
 	certReq := certRequest{
-		user:         user,
-		checker:      accessChecker,
-		sshPublicKey: sshPubKey,
-		tlsPublicKey: tlsPubKey,
+		user:      user,
+		checker:   accessChecker,
+		publicKey: key.MarshalSSHPublicKey(),
 	}
 
 	for _, tt := range []struct {
@@ -3070,7 +3006,7 @@ func TestNewWebSession(t *testing.T) {
 	}
 	bearerTokenTTL := min(req.SessionTTL, defaults.BearerTokenTTL)
 
-	ws, _, err := p.a.newWebSession(ctx, req, nil /* opts */)
+	ws, err := p.a.newWebSession(ctx, req, nil /* opts */)
 	require.NoError(t, err)
 	require.Equal(t, user.GetName(), ws.GetUser())
 	require.Equal(t, duration, ws.GetIdleTimeout())
@@ -3078,8 +3014,7 @@ func TestNewWebSession(t *testing.T) {
 	require.Equal(t, req.LoginTime.UTC().Add(req.SessionTTL), ws.GetExpiryTime())
 	require.Equal(t, req.LoginTime.UTC().Add(bearerTokenTTL), ws.GetBearerTokenExpiryTime())
 	require.NotEmpty(t, ws.GetBearerToken())
-	require.NotEmpty(t, ws.GetSSHPriv())
-	require.NotEmpty(t, ws.GetTLSPriv())
+	require.NotEmpty(t, ws.GetPriv())
 	require.NotEmpty(t, ws.GetPub())
 	require.NotEmpty(t, ws.GetTLSCert())
 }

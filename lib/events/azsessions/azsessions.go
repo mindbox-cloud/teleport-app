@@ -28,7 +28,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -451,8 +450,7 @@ func (h *Handler) UploadPart(ctx context.Context, upload events.StreamUpload, pa
 
 	// our parts are just over 5 MiB (events.MinUploadPartSizeBytes) so we can
 	// upload them in one shot
-	response, err := cErr(partBlob.Upload(ctx, streaming.NopCloser(partBody), nil))
-	if err != nil {
+	if _, err := cErr(partBlob.Upload(ctx, streaming.NopCloser(partBody), nil)); err != nil {
 		return nil, trace.Wrap(err)
 	}
 	h.log.WithFields(logrus.Fields{
@@ -461,11 +459,7 @@ func (h *Handler) UploadPart(ctx context.Context, upload events.StreamUpload, pa
 		fieldPartNumber: partNumber,
 	}).Debug("Uploaded part.")
 
-	var lastModified time.Time
-	if response.LastModified != nil {
-		lastModified = *response.LastModified
-	}
-	return &events.StreamPart{Number: partNumber, LastModified: lastModified}, nil
+	return &events.StreamPart{Number: partNumber}, nil
 }
 
 // ListParts implements [events.MultipartUploader].
@@ -498,15 +492,8 @@ func (h *Handler) ListParts(ctx context.Context, upload events.StreamUpload) ([]
 			if err != nil {
 				continue
 			}
-			var lastModified time.Time
-			if b.Properties != nil &&
-				b.Properties.LastModified != nil {
-				lastModified = *b.Properties.LastModified
-			}
-			parts = append(parts, events.StreamPart{
-				Number:       partNumber,
-				LastModified: lastModified,
-			})
+
+			parts = append(parts, events.StreamPart{Number: partNumber})
 		}
 	}
 

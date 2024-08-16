@@ -23,7 +23,6 @@ import {
   AnimatedProgressBar,
   ButtonPrimary,
   ButtonSecondary,
-  H2,
 } from 'design';
 import * as Icons from 'design/Icon';
 import Dialog, { DialogContent } from 'design/DialogConfirmation';
@@ -52,7 +51,6 @@ export function CreateDatabaseDialog({
 }: CreateDatabaseDialogProps) {
   let content: JSX.Element;
   if (attempt.status === 'failed') {
-    // TODO(bl-nero): Migrate this to alert boxes.
     content = (
       <>
         <Flex mb={5} alignItems="center">
@@ -115,7 +113,9 @@ export function CreateDatabaseDialog({
         mb={0}
         textAlign="center"
       >
-        <H2 mb={4}>Database Register</H2>
+        <Text bold caps mb={4}>
+          Database Register
+        </Text>
         {content}
       </DialogContent>
     </Dialog>

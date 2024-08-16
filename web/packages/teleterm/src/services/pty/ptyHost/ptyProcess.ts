@@ -47,7 +47,7 @@ export function createPtyProcess(
       exchangeEventsStream.resize(columns, rows);
     },
 
-    async dispose(): Promise<void> {
+    dispose(): void {
       exchangeEventsStream.dispose();
     },
 

@@ -54,7 +54,7 @@ import (
 
 type KeyAgentTestSuite struct {
 	keyDir      string
-	key         *KeyRing
+	key         *Key
 	username    string
 	hostname    string
 	clusterName string
@@ -203,7 +203,7 @@ func TestLoadKey(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create 3 separate keys, with overlapping user and cluster names
-	keys := []*KeyRing{
+	keys := []*Key{
 		s.key,
 		s.genKey(t, s.key.Username, "other-proxy-host"),
 		s.genKey(t, "other-user", s.key.ProxyHost),
@@ -716,7 +716,7 @@ func TestLocalKeyAgent_AddDatabaseKey(t *testing.T) {
 	})
 }
 
-func (s *KeyAgentTestSuite) makeKey(t *testing.T, username, proxyHost string, priv *keys.PrivateKey) *KeyRing {
+func (s *KeyAgentTestSuite) makeKey(t *testing.T, username, proxyHost string, priv *keys.PrivateKey) *Key {
 	keygen := testauthority.New()
 	ttl := time.Minute
 
@@ -754,7 +754,7 @@ func (s *KeyAgentTestSuite) makeKey(t *testing.T, username, proxyHost string, pr
 	})
 	require.NoError(t, err)
 
-	return &KeyRing{
+	return &Key{
 		PrivateKey: priv,
 		Cert:       certificate,
 		TLSCert:    tlsCert,
@@ -766,7 +766,7 @@ func (s *KeyAgentTestSuite) makeKey(t *testing.T, username, proxyHost string, pr
 	}
 }
 
-func (s *KeyAgentTestSuite) genKey(t *testing.T, username, proxyHost string) *KeyRing {
+func (s *KeyAgentTestSuite) genKey(t *testing.T, username, proxyHost string) *Key {
 	priv, err := native.GeneratePrivateKey()
 	require.NoError(t, err)
 	return s.makeKey(t, username, proxyHost, priv)

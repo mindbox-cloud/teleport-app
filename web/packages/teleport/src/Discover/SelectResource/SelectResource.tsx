@@ -21,7 +21,7 @@ import { useHistory, useLocation } from 'react-router';
 
 import * as Icons from 'design/Icon';
 import styled from 'styled-components';
-import { Box, Flex, Link, P3, Text } from 'design';
+import { Box, Flex, Link, Text } from 'design';
 import { getPlatform, Platform } from 'design/platform';
 
 import { UserPreferences } from 'gen-proto-ts/teleport/userpreferences/v1/userpreferences_pb';
@@ -32,6 +32,7 @@ import useTeleport from 'teleport/useTeleport';
 import { ToolTipNoPermBadge } from 'teleport/components/ToolTipNoPermBadge';
 import { Acl, AuthType, OnboardDiscover } from 'teleport/services/user';
 import {
+  Header,
   HeaderSubtitle,
   PermissionsErrorMessage,
   ResourceKind,
@@ -46,8 +47,6 @@ import { storageService } from 'teleport/services/storageService';
 import cfg from 'teleport/config';
 
 import { resourceKindToPreferredResource } from 'teleport/Discover/Shared/ResourceKind';
-
-import { FeatureHeader, FeatureHeaderTitle } from 'teleport/components/Layout';
 
 import { getMarketingTermMatches } from './getMarketingTermMatches';
 import { DiscoverIcon } from './icons';
@@ -150,16 +149,14 @@ export function SelectResource({ onSelect }: SelectResourceProps) {
   }, []);
 
   return (
-    <Box>
-      <FeatureHeader>
-        <FeatureHeaderTitle>Select Resource To Add</FeatureHeaderTitle>
-      </FeatureHeader>
+    <Box mt={4}>
+      <Header>Select Resource To Add</Header>
       <HeaderSubtitle>
         Teleport can integrate into most, if not all of your infrastructure.
         Search for what resource you want to add.
       </HeaderSubtitle>
       <Box height="90px" width="600px">
-        <InputWrapper>
+        <InputWrapper mb={2}>
           <StyledInput
             placeholder="Search for a resource"
             autoFocus
@@ -229,7 +226,7 @@ export function SelectResource({ onSelect }: SelectResourceProps) {
                     </Flex>
                     <Box>
                       {pretitle && (
-                        <Text typography="body3" color="text.slightlyMuted">
+                        <Text fontSize="12px" color="text.slightlyMuted">
                           {pretitle}
                         </Text>
                       )}
@@ -246,7 +243,7 @@ export function SelectResource({ onSelect }: SelectResourceProps) {
               );
             })}
           </Grid>
-          <P3 mt={6}>
+          <Text mt={6} fontSize="12px">
             Looking for something else?{' '}
             <Link
               href="https://github.com/gravitational/teleport/issues/new?assignees=&labels=feature-request&template=feature_request.md"
@@ -255,7 +252,7 @@ export function SelectResource({ onSelect }: SelectResourceProps) {
             >
               Request a feature
             </Link>
-          </P3>
+          </Text>
         </>
       )}
       {showApp && <AddApp onClose={() => setShowApp(false)} />}
@@ -274,7 +271,7 @@ const ClearSearch = ({ onClick }: { onClick(): void }) => {
         font-size: 12px;
         opacity: 0.7;
 
-        &:hover {
+        :hover {
           cursor: pointer;
           opacity: 1;
         }
@@ -600,7 +597,7 @@ const Grid = styled.div`
   row-gap: 15px;
 `;
 
-const ResourceCard = styled.div<{ hasAccess?: boolean }>`
+const ResourceCard = styled.div`
   display: flex;
   position: relative;
   align-items: center;
@@ -615,7 +612,7 @@ const ResourceCard = styled.div<{ hasAccess?: boolean }>`
 
   opacity: ${props => (props.hasAccess ? '1' : '0.45')};
 
-  &:hover {
+  :hover {
     background: ${props => props.theme.colors.spotBackground[1]};
   }
 `;

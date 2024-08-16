@@ -18,30 +18,22 @@ package vnet
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/gravitational/trace"
 	"golang.org/x/sync/errgroup"
 	"golang.zx2c4.com/wireguard/tun"
-
-	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/profile"
-	"github.com/gravitational/teleport/api/types"
-	logutils "github.com/gravitational/teleport/lib/utils/log"
-	"github.com/gravitational/teleport/lib/vnet/daemon"
 )
 
-var log = logutils.NewPackageLogger(teleport.ComponentKey, "vnet")
-
 // SetupAndRun creates a network stack for VNet and runs it in the background. To do this, it also
-// needs to launch an admin process in the background. It returns [ProcessManager] which controls
+// needs to launch an admin subcommand in the background. It returns [ProcessManager] which controls
 // the lifecycle of both background tasks.
 //
 // The caller is expected to call Close on the process manager to close the network stack, clean
-// up any resources used by it and terminate the admin process.
+// up any resources used by it and terminate the admin subcommand.
 //
 // ctx is used to wait for setup steps that happen before SetupAndRun hands out the control to the
 // process manager. If ctx gets canceled during SetupAndRun, the process manager gets closed along
@@ -66,27 +58,21 @@ func SetupAndRun(ctx context.Context, config *SetupAndRunConfig) (*ProcessManage
 		}
 	}()
 
-	// Create the socket that's used to receive the TUN device from the admin process.
+	// Create the socket that's used to receive the TUN device from the admin subcommand.
 	socket, socketPath, err := createUnixSocket()
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	log.DebugContext(ctx, "Created unix socket for admin process", "socket", socketPath)
+	slog.DebugContext(ctx, "Created unix socket for admin subcommand", "socket", socketPath)
 	pm.AddCriticalBackgroundTask("socket closer", func() error {
 		// Keep the socket open until the process context is canceled.
-		// Closing the socket signals the admin process to terminate.
+		// Closing the socket signals the admin subcommand to terminate.
 		<-processCtx.Done()
 		return trace.NewAggregate(processCtx.Err(), socket.Close())
 	})
 
-	pm.AddCriticalBackgroundTask("admin process", func() error {
-		daemonConfig := daemon.Config{
-			SocketPath: socketPath,
-			IPv6Prefix: ipv6Prefix.String(),
-			DNSAddr:    dnsIPv6.String(),
-			HomePath:   config.HomePath,
-		}
-		return trace.Wrap(execAdminProcess(processCtx, daemonConfig))
+	pm.AddCriticalBackgroundTask("admin subcommand", func() error {
+		return trace.Wrap(execAdminProcess(processCtx, socketPath, ipv6Prefix.String(), dnsIPv6.String()))
 	})
 
 	recvTUNErr := make(chan error, 1)
@@ -99,29 +85,22 @@ func SetupAndRun(ctx context.Context, config *SetupAndRunConfig) (*ProcessManage
 		recvTUNErr <- err
 	}()
 
-	// It should be more than waitingForEnablementTimeout in the vnet/daemon package
-	// so that the user sees the error about the background item first.
-	const receiveTunTimeout = time.Minute
-	receiveTunCtx, cancel := context.WithTimeoutCause(ctx, receiveTunTimeout,
-		errors.New("admin process did not send back TUN device within timeout"))
-	defer cancel()
-
 	select {
-	case <-receiveTunCtx.Done():
-		return nil, trace.Wrap(context.Cause(receiveTunCtx))
+	case <-ctx.Done():
+		return nil, trace.Wrap(ctx.Err())
 	case <-processCtx.Done():
 		return nil, trace.Wrap(context.Cause(processCtx))
 	case err := <-recvTUNErr:
 		if err != nil {
 			if processCtx.Err() != nil {
 				// Both errors being present means that VNet failed to receive a TUN device because of a
-				// problem with the admin process.
+				// problem with the admin subcommand.
 				// Returning error from processCtx will be more informative to the user, e.g., the error
 				// will say "password prompt closed by user" instead of "read from closed socket".
-				log.DebugContext(ctx, "Error from recvTUNErr ignored in favor of processCtx.Err", "error", err)
+				slog.DebugContext(ctx, "Error from recvTUNErr ignored in favor of processCtx.Err", "error", err)
 				return nil, trace.Wrap(context.Cause(processCtx))
 			}
-			return nil, trace.Wrap(err, "receiving TUN device from admin process")
+			return nil, trace.Wrap(err, "receiving TUN from admin subcommand")
 		}
 	}
 
@@ -156,18 +135,11 @@ type SetupAndRunConfig struct {
 	// ClusterConfigCache is an optional field providing [ClusterConfigCache]. If empty, a new cache
 	// will be created.
 	ClusterConfigCache *ClusterConfigCache
-	// HomePath is the tsh home used for Teleport clients created by VNet. Resolved using the same
-	// rules as HomeDir in tsh.
-	HomePath string
 }
 
 func (c *SetupAndRunConfig) CheckAndSetDefaults() error {
 	if c.AppProvider == nil {
 		return trace.BadParameter("missing AppProvider")
-	}
-
-	if c.HomePath == "" {
-		c.HomePath = profile.FullProfilePath(os.Getenv(types.HomeEnvVar))
 	}
 
 	return nil
@@ -216,43 +188,36 @@ func (pm *ProcessManager) Close() {
 	pm.cancel()
 }
 
-// AdminSetup must run as root. It creates and setups a TUN device and passes the file
-// descriptor for that device over the unix socket found at config.socketPath.
+// AdminSubcommand is the tsh subcommand that should run as root that will create and setup a TUN device and
+// pass the file descriptor for that device over the unix socket found at socketPath.
 //
 // It also handles host OS configuration that must run as root, and stays alive to keep the host configuration
-// up to date. It will stay running until the socket at config.socketPath is deleted or until encountering an
+// up to date. It will stay running until the socket at [socketPath] is deleting or encountering an
 // unrecoverable error.
-//
-// OS configuration is updated every [osConfigurationInterval]. During the update, it temporarily
-// changes egid and euid of the process to that of the client connecting to the daemon.
-func AdminSetup(ctx context.Context, config daemon.Config) error {
-	if err := config.CheckAndSetDefaults(); err != nil {
-		return trace.Wrap(err)
-	}
-
+func AdminSubcommand(ctx context.Context, socketPath, ipv6Prefix, dnsAddr string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	tunName, err := createAndSendTUNDevice(ctx, config.SocketPath)
+	tunName, err := createAndSendTUNDevice(ctx, socketPath)
 	if err != nil {
 		return trace.Wrap(err)
 	}
 
 	errCh := make(chan error)
 	go func() {
-		errCh <- trace.Wrap(osConfigurationLoop(ctx, tunName, config.IPv6Prefix, config.DNSAddr, config.HomePath, config.ClientCred))
+		errCh <- trace.Wrap(osConfigurationLoop(ctx, tunName, ipv6Prefix, dnsAddr))
 	}()
 
 	// Stay alive until we get an error on errCh, indicating that the osConfig loop exited.
-	// If the socket is deleted, indicating that the unprivileged process exited, cancel the context
-	// and then wait for the osConfig loop to exit and send an err on errCh.
-	ticker := time.NewTicker(daemon.CheckUnprivilegedProcessInterval)
+	// If the socket is deleted, indicating that the parent process exited, cancel the context and then wait
+	// for the osConfig loop to exit and send an err on errCh.
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			if _, err := os.Stat(config.SocketPath); err != nil {
-				log.DebugContext(ctx, "failed to stat socket path, assuming parent exited")
+			if _, err := os.Stat(socketPath); err != nil {
+				slog.DebugContext(ctx, "failed to stat socket path, assuming parent exited")
 				cancel()
 				return trace.Wrap(<-errCh)
 			}
@@ -273,7 +238,7 @@ func createAndSendTUNDevice(ctx context.Context, socketPath string) (string, err
 	defer func() {
 		// We can safely close the TUN device in the admin process after it has been sent on the socket.
 		if err := tun.Close(); err != nil {
-			log.WarnContext(ctx, "Failed to close TUN device.", "error", trace.Wrap(err))
+			slog.WarnContext(ctx, "Failed to close TUN device.", "error", trace.Wrap(err))
 		}
 	}()
 
@@ -285,14 +250,14 @@ func createAndSendTUNDevice(ctx context.Context, socketPath string) (string, err
 
 // osConfigurationLoop will keep running until [ctx] is canceled or an unrecoverable error is encountered, in
 // order to keep the host OS configuration up to date.
-func osConfigurationLoop(ctx context.Context, tunName, ipv6Prefix, dnsAddr, homePath string, clientCred daemon.ClientCred) error {
-	osConfigurator, err := newOSConfigurator(tunName, ipv6Prefix, dnsAddr, homePath, clientCred)
+func osConfigurationLoop(ctx context.Context, tunName, ipv6Prefix, dnsAddr string) error {
+	osConfigurator, err := newOSConfigurator(tunName, ipv6Prefix, dnsAddr)
 	if err != nil {
 		return trace.Wrap(err, "creating OS configurator")
 	}
 	defer func() {
 		if err := osConfigurator.close(); err != nil {
-			log.ErrorContext(ctx, "Error while closing OS configurator", "error", err)
+			slog.ErrorContext(ctx, "Error while closing OS configurator", "error", err)
 		}
 	}()
 
@@ -307,7 +272,7 @@ func osConfigurationLoop(ctx context.Context, tunName, ipv6Prefix, dnsAddr, home
 		// Shutting down, deconfigure OS. Pass context.Background because [ctx] has likely been canceled
 		// already but we still need to clean up.
 		if err := osConfigurator.deconfigureOS(context.Background()); err != nil {
-			log.ErrorContext(ctx, "Error deconfiguring host OS before shutting down.", "error", err)
+			slog.ErrorContext(ctx, "Error deconfiguring host OS before shutting down.", "error", err)
 		}
 	}()
 
@@ -317,8 +282,7 @@ func osConfigurationLoop(ctx context.Context, tunName, ipv6Prefix, dnsAddr, home
 
 	// Re-configure the host OS every 10 seconds. This will pick up any newly logged-in clusters by
 	// reading profiles from TELEPORT_HOME.
-	const osConfigurationInterval = 10 * time.Second
-	ticker := time.NewTicker(osConfigurationInterval)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -333,7 +297,7 @@ func osConfigurationLoop(ctx context.Context, tunName, ipv6Prefix, dnsAddr, home
 }
 
 func createTUNDevice(ctx context.Context) (tun.Device, string, error) {
-	log.DebugContext(ctx, "Creating TUN device.")
+	slog.DebugContext(ctx, "Creating TUN device.")
 	dev, err := tun.CreateTUN("utun", mtu)
 	if err != nil {
 		return nil, "", trace.Wrap(err, "creating TUN device")

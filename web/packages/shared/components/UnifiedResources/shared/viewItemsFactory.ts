@@ -40,8 +40,6 @@ import {
   SharedUnifiedResource,
 } from '../types';
 
-import { guessAppIcon } from './guessAppIcon';
-
 export function makeUnifiedResourceViewItemNode(
   resource: UnifiedResourceNode,
   ui: UnifiedResourceUi
@@ -52,7 +50,7 @@ export function makeUnifiedResourceViewItemNode(
   return {
     name: resource.hostname,
     SecondaryIcon: ServerIcon,
-    primaryIconName: 'server',
+    primaryIconName: 'Server',
     ActionButton: ui.ActionButton,
     labels: resource.labels,
     cardViewProps: {
@@ -96,7 +94,7 @@ export function makeUnifiedResourceViewItemKube(
   return {
     name: resource.name,
     SecondaryIcon: KubernetesIcon,
-    primaryIconName: 'kube',
+    primaryIconName: 'Kube',
     ActionButton: ui.ActionButton,
     labels: resource.labels,
     cardViewProps: {
@@ -139,7 +137,7 @@ export function makeUnifiedResourceViewItemDesktop(
   return {
     name: resource.name,
     SecondaryIcon: DesktopIcon,
-    primaryIconName: 'windows',
+    primaryIconName: 'Windows',
     ActionButton: ui.ActionButton,
     labels: resource.labels,
     cardViewProps: {
@@ -161,7 +159,7 @@ export function makeUnifiedResourceViewItemUserGroup(
   return {
     name: resource.friendlyName || resource.name,
     SecondaryIcon: ServerIcon,
-    primaryIconName: 'server',
+    primaryIconName: 'Server',
     ActionButton: ui.ActionButton,
     labels: resource.labels,
     cardViewProps: {},
@@ -183,22 +181,58 @@ function formatNodeSubKind(subKind: NodeSubKind): string {
   }
 }
 
+type GuessedAppType = 'Grafana' | 'Slack' | 'Jenkins' | 'Application' | 'Aws';
+
+function guessAppIcon(app: UnifiedResourceApp): GuessedAppType {
+  const { name, labels, friendlyName, awsConsole = false } = app;
+
+  if (awsConsole) {
+    return 'Aws';
+  }
+
+  if (
+    name?.toLocaleLowerCase().includes('slack') ||
+    friendlyName?.toLocaleLowerCase().includes('slack') ||
+    labels?.some(l => `${l.name}:${l.value}` === 'icon:slack')
+  ) {
+    return 'Slack';
+  }
+
+  if (
+    name?.toLocaleLowerCase().includes('grafana') ||
+    friendlyName?.toLocaleLowerCase().includes('grafana') ||
+    labels?.some(l => `${l.name}:${l.value}` === 'icon:grafana')
+  ) {
+    return 'Grafana';
+  }
+
+  if (
+    name?.toLocaleLowerCase().includes('jenkins') ||
+    friendlyName?.toLocaleLowerCase().includes('jenkins') ||
+    labels?.some(l => `${l.name}:${l.value}` === 'icon:jenkins')
+  ) {
+    return 'Jenkins';
+  }
+
+  return 'Application';
+}
+
 function getDatabaseIconName(protocol: DbProtocol): ResourceIconName {
   switch (protocol) {
     case 'postgres':
-      return 'postgres';
+      return 'Postgres';
     case 'mysql':
-      return 'mysqllarge';
+      return 'MysqlLarge';
     case 'mongodb':
-      return 'mongo';
+      return 'Mongo';
     case 'cockroachdb':
-      return 'cockroach';
+      return 'Cockroach';
     case 'snowflake':
-      return 'snowflake';
+      return 'Snowflake';
     case 'dynamodb':
-      return 'dynamo';
+      return 'Dynamo';
     default:
-      return 'database';
+      return 'Database';
   }
 }
 

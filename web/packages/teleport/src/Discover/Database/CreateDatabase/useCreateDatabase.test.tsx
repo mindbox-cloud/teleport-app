@@ -249,7 +249,6 @@ const newDatabaseReq: CreateDatabaseRequest = {
 };
 
 jest.useFakeTimers();
-const defaultIsCloud = cfg.isCloud;
 
 describe('registering new databases, mainly error checking', () => {
   const discoverCtx: DiscoverContextState = {
@@ -278,7 +277,6 @@ describe('registering new databases, mainly error checking', () => {
   let wrapper;
 
   beforeEach(() => {
-    cfg.isCloud = true;
     jest.spyOn(api, 'get').mockResolvedValue([]); // required for fetchClusterAlerts
 
     jest
@@ -315,7 +313,6 @@ describe('registering new databases, mainly error checking', () => {
   });
 
   afterEach(() => {
-    cfg.isCloud = defaultIsCloud;
     jest.clearAllMocks();
   });
 
@@ -347,9 +344,6 @@ describe('registering new databases, mainly error checking', () => {
     // of steps to skip.
     result.current.nextStep();
     expect(discoverCtx.nextStep).toHaveBeenCalledWith(2);
-    cfg.isCloud = false;
-    result.current.nextStep();
-    expect(discoverCtx.nextStep).toHaveBeenCalledWith(3);
   });
 
   test('continue polling when poll result returns with iamPolicyStatus field set to "pending"', async () => {
@@ -405,9 +399,6 @@ describe('registering new databases, mainly error checking', () => {
     result.current.nextStep();
     // Skips both deploy service AND IAM policy step.
     expect(discoverCtx.nextStep).toHaveBeenCalledWith(3);
-    cfg.isCloud = false;
-    result.current.nextStep();
-    expect(discoverCtx.nextStep).toHaveBeenCalledWith(4);
   });
 
   test('stops polling when poll result returns with iamPolicyStatus field set to "unspecified"', async () => {
@@ -476,9 +467,6 @@ describe('registering new databases, mainly error checking', () => {
     // number of steps to skip defined.
     result.current.nextStep();
     expect(discoverCtx.nextStep).toHaveBeenCalledWith();
-    cfg.isCloud = false;
-    result.current.nextStep();
-    expect(discoverCtx.nextStep).toHaveBeenCalledWith(2);
   });
 
   test('when failed to create db, stops flow', async () => {

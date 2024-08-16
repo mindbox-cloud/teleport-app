@@ -99,12 +99,12 @@ export function TraitsEditor({
 
   return (
     <Box>
-      <Text typography="body3">User Traits</Text>
+      <Text fontSize={1}>User Traits</Text>
       <Box>
         {configuredTraits.map(({ traitKey, traitValues }, index) => {
           return (
             <Box mb={-5} key={index}>
-              <Flex alignItems="start" mt={-3}>
+              <Flex alignItems="start" mt={-3} justify="start">
                 <Box width="290px" mr={1} mt={4}>
                   <FieldSelectCreatable
                     data-testid="trait-key"

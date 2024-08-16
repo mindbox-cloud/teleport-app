@@ -132,7 +132,6 @@ export function DocumentTerminal(props: {
           unsanitizedFontFamily={unsanitizedTerminalFontFamily}
           fontSize={terminalFontSize}
           onEnterKey={attempt.data.refreshTitle}
-          windowsPty={attempt.data.windowsPty}
         />
       )}
     </Document>

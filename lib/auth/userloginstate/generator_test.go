@@ -37,7 +37,6 @@ import (
 	"github.com/gravitational/teleport/api/types/header"
 	"github.com/gravitational/teleport/api/types/trait"
 	"github.com/gravitational/teleport/api/types/userloginstate"
-	"github.com/gravitational/teleport/entitlements"
 	"github.com/gravitational/teleport/lib/backend/memory"
 	"github.com/gravitational/teleport/lib/modules"
 	"github.com/gravitational/teleport/lib/services"
@@ -92,8 +91,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -120,8 +120,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -151,8 +152,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -179,8 +181,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -208,7 +211,9 @@ func TestAccessLists(t *testing.T) {
 			roles:   []string{"orole1", "owner-role1", "owner-role2"},
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, ownerUser,
-				nil,
+				map[string]string{
+					userloginstate.OriginalRolesAndTraitsSet: "true",
+				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
 				[]string{"orole1", "owner-role1", "owner-role2"},
@@ -235,7 +240,9 @@ func TestAccessLists(t *testing.T) {
 			roles:   []string{"orole1", "owner-role1", "owner-role2", "role1"},
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, ownerUser,
-				nil,
+				map[string]string{
+					userloginstate.OriginalRolesAndTraitsSet: "true",
+				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
 				[]string{"orole1", "owner-role1", "owner-role2", "role1"},
@@ -280,8 +287,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -304,8 +312,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -337,8 +346,9 @@ func TestAccessLists(t *testing.T) {
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
 				map[string]string{
-					"label1": "value1",
-					"label2": "value2",
+					"label1":                                 "value1",
+					"label2":                                 "value2",
+					userloginstate.OriginalRolesAndTraitsSet: "true",
 				},
 				[]string{"orole1"},
 				trait.Traits{"otrait1": {"value1", "value2"}},
@@ -368,7 +378,9 @@ func TestAccessLists(t *testing.T) {
 			roles:   []string{"role1"},
 			wantErr: require.NoError,
 			expected: newUserLoginState(t, "user",
-				nil,
+				map[string]string{
+					userloginstate.OriginalRolesAndTraitsSet: "true",
+				},
 				nil,
 				nil,
 				[]string{"role1"},
@@ -386,10 +398,8 @@ func TestAccessLists(t *testing.T) {
 			modules.SetTestModules(t, &modules.TestModules{
 				TestBuildType: modules.BuildEnterprise,
 				TestFeatures: modules.Features{
-					Cloud: test.cloud,
-					Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-						entitlements.Identity: {Enabled: true},
-					},
+					Cloud:                      test.cloud,
+					IdentityGovernanceSecurity: true,
 				},
 			})
 

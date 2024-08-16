@@ -23,7 +23,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"io"
-	"log/slog"
 	"net"
 	"regexp"
 	"strconv"
@@ -32,6 +31,7 @@ import (
 
 	"github.com/gravitational/trace"
 	"github.com/jonboulle/clockwork"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gravitational/teleport/lib/multiplexer"
 )
@@ -101,7 +101,7 @@ func WrapSSHClientConn(ctx context.Context, nc net.Conn, redial redialFunc) (net
 func wrapSSHClientConn(ctx context.Context, nc net.Conn, redial redialFunc, clock clockwork.Clock) (net.Conn, error) {
 	dhKey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to generate ECDH key, proceeding without resumption (this is a bug)", "error", err)
+		logrus.WithError(err).Error("Failed to generate ECDH key, proceeding without resumption (this is a bug).")
 		return nc, nil
 	}
 
@@ -133,7 +133,7 @@ func wrapSSHClientConn(ctx context.Context, nc net.Conn, redial redialFunc, cloc
 		// regular SSH connection, conn is about to read the SSH- line from the
 		// server but we've sent sshPrefix already, so we have to skip it from
 		// the application side writes
-		slog.DebugContext(ctx, "server does not support resumption, proceeding without")
+		logrus.Debug("Server does not support resumption, proceeding without.")
 		return &sshVersionSkipConn{
 			Conn:           conn,
 			alreadyWritten: sshPrefix,
@@ -142,7 +142,7 @@ func wrapSSHClientConn(ctx context.Context, nc net.Conn, redial redialFunc, cloc
 
 	dhSecret, err := dhKey.ECDH(dhPub)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to complete ECDH key exchange, proceeding without resumption", "error", err)
+		logrus.WithError(err).Warn("Failed to complete ECDH key exchange, proceeding without resumption.")
 		return &sshVersionSkipConn{
 			Conn:           conn,
 			alreadyWritten: sshPrefix,
@@ -181,7 +181,7 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 
 	// detached is held open by the current underlying connection
 	const isFirstConn = true
-	detached := goAttachResumableUnlocking(ctx, resumableConn, firstConn, isFirstConn)
+	detached := goAttachResumableUnlocking(resumableConn, firstConn, isFirstConn)
 
 	reconnectTicker := clock.NewTicker(replacementInterval)
 	defer reconnectTicker.Stop()
@@ -192,16 +192,16 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 			return
 
 		case <-reconnectTicker.Chan():
-			slog.DebugContext(ctx, "attempting periodic reconnection", "host_id", hostID)
+			logrus.Debug("Attempting periodic reconnection.")
 
 			newConn, err := dialResumable(ctx, token, hostID, redial)
 			if err != nil {
-				slog.WarnContext(ctx, "periodic reconnection failed", "host_id", hostID, "error", err)
+				logrus.Warnf("Periodic reconnection: %v.", err.Error())
 				continue
 			}
 
 			if newConn == nil {
-				slog.WarnContext(ctx, "impossible to resume connection, giving up on periodic reconnection", "host_id", hostID)
+				logrus.Warn("Impossible to resume connection, giving up on periodic reconnection.")
 				reconnectTicker.Stop()
 				select {
 				case <-ctx.Done():
@@ -212,20 +212,14 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 
 			resumableConn.mu.Lock()
 			const isNotFirstConn = false
-			detached = goAttachResumableUnlocking(ctx, resumableConn, newConn, isNotFirstConn)
+			detached = goAttachResumableUnlocking(resumableConn, newConn, isNotFirstConn)
 
 			continue
 
 		case <-detached:
 		}
 
-		reconnectTicker.Stop()
-		select {
-		case <-reconnectTicker.Chan():
-		default:
-		}
-
-		slog.DebugContext(ctx, "connection lost, starting reconnection loop", "host_id", hostID)
+		logrus.Debug("Connection lost, starting reconnection loop.")
 		reconnectDeadline := time.Now().Add(reconnectTimeout)
 		backoff := minBackoff
 		for {
@@ -237,7 +231,7 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 			resumableConn.mu.Unlock()
 
 			if time.Now().After(reconnectDeadline) {
-				slog.ErrorContext(ctx, "failed to reconnect to server after timeout", "host_id", hostID)
+				logrus.Error("Failed to reconnect to server after timeout.")
 				return
 			}
 
@@ -251,23 +245,27 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 
 			newConn, err := dialResumable(ctx, token, hostID, redial)
 			if err != nil {
-				slog.WarnContext(ctx, "reconnection attempt failed", "host_id", hostID, "error", err)
+				logrus.Warnf("Reconnection attempt: %v.", err.Error())
 				continue
 			}
 
 			if newConn == nil {
-				slog.WarnContext(ctx, "impossible to resume connection", "host_id", hostID)
+				logrus.Error("Impossible to resume connection.")
 				return
 			}
 
 			resumableConn.mu.Lock()
 			const isNotFirstConn = false
-			detached = goAttachResumableUnlocking(ctx, resumableConn, newConn, isNotFirstConn)
+			detached = goAttachResumableUnlocking(resumableConn, newConn, isNotFirstConn)
 
 			break
 		}
 
 		reconnectTicker.Reset(replacementInterval)
+		select {
+		case <-reconnectTicker.Chan():
+		default:
+		}
 	}
 }
 
@@ -275,23 +273,23 @@ func runClientResumableUnlocking(ctx context.Context, resumableConn *Conn, first
 // background goroutine, with some client-friendly logging, returning a channel
 // that gets closed at the end of the goroutine. resumableConn is expected to be
 // locked, like runResumeV1Unlocking.
-func goAttachResumableUnlocking(ctx context.Context, resumableConn *Conn, nc net.Conn, firstConn bool) <-chan struct{} {
+func goAttachResumableUnlocking(resumableConn *Conn, nc net.Conn, firstConn bool) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 
 		if firstConn {
-			slog.DebugContext(ctx, "attaching new resumable connection")
+			logrus.Debug("Attaching new resumable connection.")
 		} else {
-			slog.DebugContext(ctx, "attaching existing resumable connection")
+			logrus.Debug("Attaching existing resumable connection.")
 		}
 
 		err := runResumeV1Unlocking(resumableConn, nc, firstConn)
 
 		if firstConn {
-			slog.DebugContext(ctx, "handling new resumable connection", "error", err)
+			logrus.Debugf("Handling new resumable connection: %v", err.Error())
 		} else {
-			slog.DebugContext(ctx, "handling existing resumable connection", "error", err)
+			logrus.Debugf("Handling existing resumable connection: %v", err.Error())
 		}
 	}()
 	return done
@@ -307,7 +305,7 @@ func dialResumable(ctx context.Context, token resumptionToken, hostID string, re
 		return nil, trace.Wrap(err)
 	}
 
-	slog.DebugContext(ctx, "dialing server for connection resumption", "host_id", hostID)
+	logrus.Debug("Dialing server for connection resumption.")
 	nc, err := redial(ctx, hostID)
 	if err != nil {
 		// If connections are failing because client certificates are expired
@@ -343,7 +341,7 @@ func dialResumable(ctx context.Context, token resumptionToken, hostID string, re
 
 	if dhPub == nil {
 		conn.Close()
-		slog.ErrorContext(ctx, "reached a server without resumption support, giving up", "host_id", hostID)
+		logrus.Error("Reached a server without resumption support, giving up.")
 		return nil, nil
 	}
 
@@ -379,11 +377,11 @@ func dialResumable(ctx context.Context, token resumptionToken, hostID string, re
 	_ = conn.Close()
 	switch responseTag {
 	case notFoundServerExchangeTag:
-		slog.ErrorContext(ctx, "server responded with 'resumable connection not found', giving up", "host_id", hostID)
+		logrus.Error("Server responded with 'resumable connection not found', giving up.")
 	case badAddressServerExchangeTag:
-		slog.ErrorContext(ctx, "server responded with 'bad client IP address', giving up", "host_id", hostID)
+		logrus.Error("Server responded with 'bad client IP address', giving up.")
 	default:
-		slog.ErrorContext(ctx, "server responded with an unknown error tag, giving up", "host_id", hostID, "tag", responseTag)
+		logrus.Errorf("Server responded with an unknown error tag (%v), giving up.", responseTag)
 	}
 
 	return nil, nil

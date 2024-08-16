@@ -237,7 +237,6 @@ test('useDocumentTerminal shows a warning notification if the call to TerminalsS
   jest.spyOn(terminalsService, 'createPtyProcess').mockResolvedValue({
     process: getPtyProcessMock(),
     creationStatus: PtyProcessCreationStatus.ResolveShellEnvTimeout,
-    windowsPty: undefined,
   });
   jest.spyOn(notificationsService, 'notifyWarning');
 
@@ -575,7 +574,6 @@ const testSetup = (
       return {
         process: getPtyProcessMock(),
         creationStatus: PtyProcessCreationStatus.Ok,
-        windowsPty: undefined,
       };
     });
 

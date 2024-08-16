@@ -69,10 +69,6 @@ export interface PtyCreate {
      * @generated from protobuf field: string init_message = 8;
      */
     initMessage: string;
-    /**
-     * @generated from protobuf field: bool use_conpty = 9;
-     */
-    useConpty: boolean;
 }
 /**
  * @generated from protobuf message PtyClientEvent
@@ -270,8 +266,7 @@ class PtyCreate$Type extends MessageType<PtyCreate> {
             { no: 4, name: "args", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "cwd", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "env", kind: "message", T: () => Struct },
-            { no: 8, name: "init_message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 9, name: "use_conpty", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 8, name: "init_message", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<PtyCreate>): PtyCreate {
@@ -280,7 +275,6 @@ class PtyCreate$Type extends MessageType<PtyCreate> {
         message.args = [];
         message.cwd = "";
         message.initMessage = "";
-        message.useConpty = false;
         if (value !== undefined)
             reflectionMergePartial<PtyCreate>(this, message, value);
         return message;
@@ -304,9 +298,6 @@ class PtyCreate$Type extends MessageType<PtyCreate> {
                     break;
                 case /* string init_message */ 8:
                     message.initMessage = reader.string();
-                    break;
-                case /* bool use_conpty */ 9:
-                    message.useConpty = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -335,9 +326,6 @@ class PtyCreate$Type extends MessageType<PtyCreate> {
         /* string init_message = 8; */
         if (message.initMessage !== "")
             writer.tag(8, WireType.LengthDelimited).string(message.initMessage);
-        /* bool use_conpty = 9; */
-        if (message.useConpty !== false)
-            writer.tag(9, WireType.Varint).bool(message.useConpty);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

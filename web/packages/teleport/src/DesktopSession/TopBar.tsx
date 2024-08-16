@@ -32,7 +32,6 @@ export default function TopBar(props: Props) {
   const {
     userHost,
     isSharingClipboard,
-    clipboardSharingMessage,
     onDisconnect,
     canShareDirectory,
     isSharingDirectory,
@@ -74,7 +73,11 @@ export default function TopBar(props: Props) {
             <FolderShared style={primaryOnTrue(isSharingDirectory)} pr={3} />
           </HoverTooltip>
           <HoverTooltip
-            tipContent={clipboardSharingMessage}
+            tipContent={
+              isSharingClipboard
+                ? 'Clipboard Sharing Enabled'
+                : 'Clipboard Sharing Disabled'
+            }
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             transformOrigin={{ vertical: 'top', horizontal: 'center' }}
           >
@@ -114,7 +117,6 @@ export const TopBarHeight = 40;
 type Props = {
   userHost: string;
   isSharingClipboard: boolean;
-  clipboardSharingMessage: string;
   canShareDirectory: boolean;
   isSharingDirectory: boolean;
   onDisconnect: VoidFunction;

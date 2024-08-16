@@ -47,7 +47,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'Ubuntu 14.04+',
     kind: ResourceKind.Server,
     keywords: baseServerKeywords + 'ubuntu linux',
-    icon: 'linux',
+    icon: 'Linux',
     event: DiscoverEventResource.Server,
     platform: Platform.Linux,
   },
@@ -55,7 +55,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'Debian 8+',
     kind: ResourceKind.Server,
     keywords: baseServerKeywords + 'debian linux',
-    icon: 'linux',
+    icon: 'Linux',
     event: DiscoverEventResource.Server,
     platform: Platform.Linux,
   },
@@ -63,7 +63,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'RHEL/CentOS 7+',
     kind: ResourceKind.Server,
     keywords: baseServerKeywords + 'rhel centos linux',
-    icon: 'linux',
+    icon: 'Linux',
     event: DiscoverEventResource.Server,
     platform: Platform.Linux,
   },
@@ -71,7 +71,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'Amazon Linux 2/2023',
     kind: ResourceKind.Server,
     keywords: baseServerKeywords + 'amazon linux',
-    icon: 'aws',
+    icon: 'Aws',
     event: DiscoverEventResource.Server,
     platform: Platform.Linux,
   },
@@ -79,7 +79,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'macOS',
     kind: ResourceKind.Server,
     keywords: baseServerKeywords + 'mac macos intel silicone apple',
-    icon: 'apple',
+    icon: 'Apple',
     event: DiscoverEventResource.Server,
     platform: Platform.macOS,
   },
@@ -89,7 +89,7 @@ export const SERVERS: ResourceSpec[] = [
     keywords:
       baseServerKeywords +
       'ec2 instance aws amazon simple systems manager ssm auto enrollment',
-    icon: 'aws',
+    icon: 'Aws',
     event: DiscoverEventResource.Ec2Instance,
     nodeMeta: {
       location: ServerLocation.Aws,
@@ -100,7 +100,7 @@ export const SERVERS: ResourceSpec[] = [
     name: 'Connect My Computer',
     kind: ResourceKind.ConnectMyComputer,
     keywords: baseServerKeywords + 'connect my computer',
-    icon: 'laptop',
+    icon: 'Laptop',
     event: DiscoverEventResource.Server,
     supportedPlatforms: [Platform.macOS, Platform.Linux],
     supportedAuthTypes: ['local', 'passwordless'],
@@ -112,7 +112,7 @@ export const APPLICATIONS: ResourceSpec[] = [
     name: 'Application',
     kind: ResourceKind.Application,
     keywords: 'application',
-    icon: 'application',
+    icon: 'Application',
     isDialog: true,
     event: DiscoverEventResource.ApplicationHttp,
   },
@@ -120,7 +120,7 @@ export const APPLICATIONS: ResourceSpec[] = [
     name: 'AWS CLI/Console Access',
     kind: ResourceKind.Application,
     keywords: 'application aws cli console access',
-    icon: 'aws',
+    icon: 'Aws',
     event: DiscoverEventResource.ApplicationAwsConsole,
     appMeta: { awsConsole: true },
   },
@@ -131,7 +131,7 @@ export const WINDOWS_DESKTOPS: ResourceSpec[] = [
     name: 'Active Directory Users',
     kind: ResourceKind.Desktop,
     keywords: 'windows desktop active directory ad',
-    icon: 'windows',
+    icon: 'Windows',
     event: DiscoverEventResource.WindowsDesktop,
     unguidedLink:
       'https://goteleport.com/docs/desktop-access/active-directory/',
@@ -140,7 +140,7 @@ export const WINDOWS_DESKTOPS: ResourceSpec[] = [
     name: 'Local Users',
     kind: ResourceKind.Desktop,
     keywords: 'windows desktop non-ad local',
-    icon: 'windows',
+    icon: 'Windows',
     event: DiscoverEventResource.WindowsDesktopNonAD,
     unguidedLink: 'https://goteleport.com/docs/desktop-access/getting-started/',
   },
@@ -151,7 +151,7 @@ export const KUBERNETES: ResourceSpec[] = [
     name: 'Kubernetes',
     kind: ResourceKind.Kubernetes,
     keywords: 'kubernetes cluster kubes',
-    icon: 'kube',
+    icon: 'Kube',
     event: DiscoverEventResource.Kubernetes,
     kubeMeta: { location: KubeLocation.SelfHosted },
   },
@@ -159,7 +159,7 @@ export const KUBERNETES: ResourceSpec[] = [
     name: 'EKS',
     kind: ResourceKind.Kubernetes,
     keywords: awsKeywords + 'kubernetes cluster kubes eks elastic service',
-    icon: 'aws',
+    icon: 'Aws',
     event: DiscoverEventResource.KubernetesEks,
     kubeMeta: { location: KubeLocation.Aws },
   },
@@ -177,7 +177,7 @@ export const BASE_RESOURCES: ResourceSpec[] = [
 
 export function getResourcePretitle(r: ResourceSpec) {
   if (!r) {
-    return '';
+    return {};
   }
 
   switch (r.kind) {

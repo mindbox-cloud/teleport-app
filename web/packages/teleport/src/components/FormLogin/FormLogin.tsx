@@ -47,8 +47,6 @@ import {
 import createMfaOptions, { MfaOption } from 'shared/utils/createMfaOptions';
 import { StepSlider, StepComponentProps } from 'design/StepSlider';
 
-import { P } from 'design/Text/Text';
-
 import { UserCredentials } from 'teleport/services/auth';
 
 import { PasskeyIcons } from '../Passkeys';
@@ -90,7 +88,7 @@ export default function LoginForm(props: Props) {
   // Everything below requires local auth to be enabled.
   return (
     <Card my="5" mx="auto" width={500} py={4}>
-      <Text typography="h1" mb={4} textAlign="center">
+      <Text typography="h3" mb={4} textAlign="center">
         Sign in to Teleport
       </Text>
       {errorMessage && <Alerts.Danger m={4}>{errorMessage}</Alerts.Danger>}
@@ -103,10 +101,10 @@ export default function LoginForm(props: Props) {
           primaryAuthType={actualPrimaryType}
         />
       ) : (
-        <P mx={4}>
+        <Text mx={4} typography="paragraph2">
           The ability to login has not been enabled. Please contact your system
           administrator for more information.
-        </P>
+        </Text>
       )}
     </Card>
   );
@@ -119,7 +117,7 @@ const SsoList = ({
   autoFocus = false,
   hasTransitionEnded,
 }: Props & { hasTransitionEnded?: boolean }) => {
-  const ref = useRefAutoFocus<HTMLButtonElement>({
+  const ref = useRefAutoFocus<HTMLInputElement>({
     shouldFocus: hasTransitionEnded && autoFocus,
   });
   const { isProcessing } = attempt;
@@ -140,15 +138,28 @@ const Passwordless = ({
   hasTransitionEnded,
   primary,
 }: Props & { hasTransitionEnded: boolean; primary: boolean }) => {
-  const ref = useRefAutoFocus<HTMLButtonElement>({
+  const ref = useRefAutoFocus<HTMLInputElement>({
     shouldFocus: hasTransitionEnded && autoFocus,
   });
+  // Firefox currently does not support passwordless and when
+  // logging in, it will return an ambiguous error.
+  // We display a soft warning because firefox may provide
+  // support in the near future: https://github.com/gravitational/webapps/pull/876
+  const isFirefox = window.navigator?.userAgent
+    ?.toLowerCase()
+    .includes('firefox');
   return (
     <Box data-testid="passwordless">
+      {isFirefox && (
+        <Alerts.Info mt={3}>
+          Firefox may not support passwordless login. Please try Chrome or
+          Safari.
+        </Alerts.Info>
+      )}
       <Flex
         flexDirection="column"
         border={1}
-        borderColor="interactive.tonal.neutral.2.background"
+        borderColor="interactive.tonal.neutral.2"
         borderRadius={3}
         p={3}
         gap={3}
@@ -157,12 +168,12 @@ const Passwordless = ({
           <PasskeyIcons />
         </div>
         <div>
-          <P>Your browser will prompt you for a device key.</P>
+          <Text typography="body1">
+            Your browser will prompt you for a device key.
+          </Text>
         </div>
         <Button
-          fill="filled"
-          intent={primary ? 'primary' : 'neutral'}
-          size="extra-large"
+          kind={primary ? 'primary' : 'secondary'}
           setRef={ref}
           disabled={attempt.isProcessing}
           onClick={() => onLoginWithWebauthn()}
@@ -317,7 +328,7 @@ const LocalForm = ({
           <ButtonPrimary
             width="100%"
             type="submit"
-            size="extra-large"
+            size="large"
             onClick={e => onLoginClick(e, validator)}
             disabled={isProcessing}
           >
@@ -344,7 +355,6 @@ const LoginOptions = ({
         refCallback={refCallback}
         authType={otherProps.primaryAuthType}
         primary
-        autoFocus
       />
       {otherAuthTypes.length > 0 && <Divider />}
       {otherAuthTypes.map(authType => (
@@ -383,8 +393,8 @@ function AuthMethod({
         <LocalForm {...otherProps} autoFocus={true} />
       ) : (
         <Box py={2}>
-          <ButtonSecondary size="extra-large" block onClick={next}>
-            Sign in with Username and Password
+          <ButtonSecondary size="large" block onClick={next}>
+            Sign in with username and password
           </ButtonSecondary>
         </Box>
       );
@@ -402,8 +412,6 @@ const LocalLogin = ({
       <LocalForm {...otherProps} autoFocus={true} />
       <Box pt={3} textAlign="center">
         <ButtonText
-          width="100%"
-          size="extra-large"
           disabled={otherProps.attempt.isProcessing}
           onClick={() => {
             otherProps.clearAttempt();
@@ -439,6 +447,7 @@ const StyledOr = styled.div`
   width: 32px;
   justify-content: center;
   position: absolute;
+  z-index: 1;
   text-transform: uppercase;
 `;
 

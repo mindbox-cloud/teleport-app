@@ -34,6 +34,7 @@ import (
 	"github.com/gravitational/teleport/api/constants"
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/api/utils/keys"
+	"github.com/gravitational/teleport/lib/tlsca"
 )
 
 // SQLAdminClient defines an interface providing access to the GCP Cloud SQL API.
@@ -47,7 +48,7 @@ type SQLAdminClient interface {
 	GetDatabaseInstance(ctx context.Context, db types.Database) (*sqladmin.DatabaseInstance, error)
 	// GenerateEphemeralCert returns a new client certificate with RSA key for the
 	// project/instance configured in a session.
-	GenerateEphemeralCert(ctx context.Context, db types.Database, certExpiry time.Time) (*tls.Certificate, error)
+	GenerateEphemeralCert(ctx context.Context, db types.Database, identity tlsca.Identity) (*tls.Certificate, error)
 }
 
 // NewGCPSQLAdminClient returns a GCPSQLAdminClient interface wrapping sqladmin.Service.
@@ -102,7 +103,7 @@ func (g *gcpSQLAdminClient) GetDatabaseInstance(ctx context.Context, db types.Da
 // GenerateEphemeralCert returns a new client certificate with RSA key created
 // using the GenerateEphemeralCertRequest Cloud SQL API. Client certificates are
 // required when enabling SSL in Cloud SQL.
-func (g *gcpSQLAdminClient) GenerateEphemeralCert(ctx context.Context, db types.Database, certExpiry time.Time) (*tls.Certificate, error) {
+func (g *gcpSQLAdminClient) GenerateEphemeralCert(ctx context.Context, db types.Database, identity tlsca.Identity) (*tls.Certificate, error) {
 	// TODO(jimbishopp): cache database certificates to avoid expensive generate
 	// operation on each connection.
 
@@ -120,7 +121,7 @@ func (g *gcpSQLAdminClient) GenerateEphemeralCert(ctx context.Context, db types.
 	gcp := db.GetGCP()
 	req := g.service.Connect.GenerateEphemeralCert(gcp.ProjectID, gcp.InstanceID, &sqladmin.GenerateEphemeralCertRequest{
 		PublicKey:     string(pem.EncodeToMemory(&pem.Block{Bytes: pkix, Type: "RSA PUBLIC KEY"})),
-		ValidDuration: fmt.Sprintf("%ds", int(time.Until(certExpiry).Seconds())),
+		ValidDuration: fmt.Sprintf("%ds", int(time.Until(identity.Expires).Seconds())),
 	})
 	resp, err := req.Context(ctx).Do()
 	if err != nil {

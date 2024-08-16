@@ -36,18 +36,14 @@ export function SlideTabs({
       <TabNav role="tablist" appearance={appearance} size={size}>
         {tabs.map((tabName, tabIndex) => {
           const selected = tabIndex === activeIndex;
-          let onClick;
-          if (!disabled && !isProcessing) {
-            onClick = (e: React.MouseEvent<HTMLLabelElement, MouseEvent>) => {
-              e.preventDefault();
-              onChange(tabIndex);
-            };
-          }
           return (
             <TabLabel
               role="tab"
               htmlFor={`${name}-${tabName}`}
-              onClick={onClick}
+              onClick={e => {
+                e.preventDefault();
+                onChange(tabIndex);
+              }}
               itemCount={tabs.length}
               key={`${tabName}-${tabIndex}`}
               className={tabIndex === activeIndex && 'selected'}
@@ -55,7 +51,9 @@ export function SlideTabs({
               disabled={disabled}
             >
               <Box>
-                {selected && isProcessing && <Spinner delay="none" size={25} />}
+                {selected && isProcessing && (
+                  <Spinner delay="none" size="25px" />
+                )}
                 <Text ml={2}>{tabName}</Text>
               </Box>
               <TabInput type="radio" name={name} id={`${name}-${tabName}`} />
@@ -122,33 +120,22 @@ const Wrapper = styled.div`
   position: relative;
 `;
 
-const TabLabel = styled.label<{
-  itemCount: number;
-  processing?: boolean;
-  disabled?: boolean;
-}>`
-  cursor: ${p => (p.processing || p.disabled ? 'default' : 'pointer')};
+const TabLabel = styled.label`
+  cursor: pointer;
   display: flex;
   justify-content: center;
   padding: 10px;
   width: ${props => 100 / props.itemCount}%;
   z-index: 1; /* Ensures that the label is above the background slider. */
-  opacity: ${p => (p.processing || p.disabled ? 0.5 : 1)};
+  opacity: ${p => (p.processing ? 0.5 : 1)};
+  pointer-events: ${p => (p.processing || p.disabled ? 'none' : 'auto')};
 `;
 
 const TabInput = styled.input`
   display: none;
 `;
 
-type Appearance = 'square' | 'round';
-type Size = 'xlarge' | 'medium';
-
-const TabSlider = styled.div<{
-  appearance: Appearance;
-  itemCount: number;
-  size: Size;
-  activeIndex: number;
-}>`
+const TabSlider = styled.div`
   background-color: ${({ theme }) => theme.colors.brand};
   border-radius: ${props => (props.appearance === 'square' ? '8px' : '60px')};
   box-shadow: 0px 2px 6px rgba(12, 12, 14, 0.1);
@@ -162,7 +149,7 @@ const TabSlider = styled.div<{
   width: calc(${props => 100 / props.itemCount}% - 16px);
 `;
 
-const TabNav = styled.nav<{ appearance: Appearance; size: Size }>`
+const TabNav = styled.nav`
   align-items: center;
   background-color: ${props => props.theme.colors.spotBackground[0]};
   border-radius: ${props => (props.appearance === 'square' ? '8px' : '60px')};

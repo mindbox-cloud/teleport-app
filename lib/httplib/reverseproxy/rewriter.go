@@ -126,11 +126,9 @@ func maybeSetXRealIP(req *http.Request) {
 // maybeSetForwarded sets X-Forwarded-* headers if it is not set to the
 // scheme of the request.
 func maybeSetForwarded(req *http.Request) {
-	// Set X-Forwarded-For since net/http/httputil.ReverseProxy won't
-	// do this when Rewrite is set.
-	if clientIP, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
-		req.Header.Set(XForwardedFor, clientIP)
-	}
+	// We need to delete the value because httputil.ReverseProxy
+	// appends to the existing value.
+	req.Header.Del(XForwardedFor)
 
 	if req.Header.Get(XForwardedProto) != "" {
 		return

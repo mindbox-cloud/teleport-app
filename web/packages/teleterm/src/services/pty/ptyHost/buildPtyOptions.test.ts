@@ -47,7 +47,7 @@ describe('getPtyProcessOptions', () => {
 
       const { env } = getPtyProcessOptions(
         makeRuntimeSettings(),
-        { ssh: { noResume: false }, windowsPty: { useConpty: true } },
+        { noResume: false },
         cmd,
         processEnv
       );
@@ -76,7 +76,7 @@ describe('getPtyProcessOptions', () => {
 
       const { env } = getPtyProcessOptions(
         makeRuntimeSettings(),
-        { ssh: { noResume: false }, windowsPty: { useConpty: true } },
+        { noResume: false },
         cmd,
         processEnv
       );
@@ -103,7 +103,7 @@ describe('getPtyProcessOptions', () => {
 
       const { args } = getPtyProcessOptions(
         makeRuntimeSettings(),
-        { ssh: { noResume: true }, windowsPty: { useConpty: true } },
+        { noResume: true },
         cmd,
         processEnv
       );

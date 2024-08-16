@@ -18,16 +18,18 @@ package vnet
 
 import (
 	"context"
+	"log/slog"
 	"net"
+	"os"
 
 	"github.com/gravitational/trace"
 	"github.com/jonboulle/clockwork"
 
 	"github.com/gravitational/teleport/api/profile"
+	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/api/utils"
 	"github.com/gravitational/teleport/lib/client"
 	"github.com/gravitational/teleport/lib/client/clientcache"
-	"github.com/gravitational/teleport/lib/vnet/daemon"
 )
 
 type osConfig struct {
@@ -43,19 +45,18 @@ type osConfigurator struct {
 	clientStore        *client.Store
 	clientCache        *clientcache.Cache
 	clusterConfigCache *ClusterConfigCache
-	// daemonClientCred are the credentials of the process that contacted the daemon.
-	daemonClientCred daemon.ClientCred
-	tunName          string
-	tunIPv6          string
-	dnsAddr          string
-	homePath         string
-	tunIPv4          string
+	tunName            string
+	tunIPv6            string
+	dnsAddr            string
+	homePath           string
+	tunIPv4            string
 }
 
-func newOSConfigurator(tunName, ipv6Prefix, dnsAddr, homePath string, daemonClientCred daemon.ClientCred) (*osConfigurator, error) {
+func newOSConfigurator(tunName, ipv6Prefix, dnsAddr string) (*osConfigurator, error) {
+	homePath := os.Getenv(types.HomeEnvVar)
 	if homePath == "" {
 		// This runs as root so we need to be configured with the user's home path.
-		return nil, trace.BadParameter("homePath must be passed from unprivileged process")
+		return nil, trace.BadParameter("%s must be set", types.HomeEnvVar)
 	}
 
 	// ipv6Prefix always looks like "fdxx:xxxx:xxxx::"
@@ -63,12 +64,11 @@ func newOSConfigurator(tunName, ipv6Prefix, dnsAddr, homePath string, daemonClie
 	tunIPv6 := ipv6Prefix + "1"
 
 	configurator := &osConfigurator{
-		tunName:          tunName,
-		tunIPv6:          tunIPv6,
-		dnsAddr:          dnsAddr,
-		homePath:         homePath,
-		clientStore:      client.NewFSClientStore(homePath),
-		daemonClientCred: daemonClientCred,
+		tunName:     tunName,
+		tunIPv6:     tunIPv6,
+		dnsAddr:     dnsAddr,
+		homePath:    homePath,
+		clientStore: client.NewFSClientStore(homePath),
 	}
 	configurator.clusterConfigCache = NewClusterConfigCache(clockwork.NewRealClock())
 
@@ -92,32 +92,18 @@ func (c *osConfigurator) close() error {
 	return trace.Wrap(c.clientCache.Clear())
 }
 
-// updateOSConfiguration reads tsh profiles out of [c.homePath]. For each profile, it reads the VNet
-// config of the root cluster and of each leaf cluster. Then it proceeds to update the OS based on
-// information from that config.
-//
-// For the duration of reading data from clusters, it drops the root privileges, only to regain them
-// before configuring the OS.
 func (c *osConfigurator) updateOSConfiguration(ctx context.Context) error {
 	var dnsZones []string
 	var cidrRanges []string
 
-	// Drop privileges to ensure that the user who spawned the daemon client has privileges necessary
-	// to access c.homePath that it sent when starting the daemon.
-	// Otherwise a client could make the daemon read a profile out of any directory.
-	if err := c.doWithDroppedRootPrivileges(ctx, func() error {
-		profileNames, err := profile.ListProfileNames(c.homePath)
-		if err != nil {
-			return trace.Wrap(err, "listing user profiles")
-		}
-		for _, profileName := range profileNames {
-			profileDNSZones, profileCIDRRanges := c.getDNSZonesAndCIDRRangesForProfile(ctx, profileName)
-			dnsZones = append(dnsZones, profileDNSZones...)
-			cidrRanges = append(cidrRanges, profileCIDRRanges...)
-		}
-		return nil
-	}); err != nil {
-		return trace.Wrap(err)
+	profileNames, err := profile.ListProfileNames(c.homePath)
+	if err != nil {
+		return trace.Wrap(err, "listing user profiles")
+	}
+	for _, profileName := range profileNames {
+		profileDNSZones, profileCIDRRanges := c.getDNSZonesAndCIDRRangesForProfile(ctx, profileName)
+		dnsZones = append(dnsZones, profileDNSZones...)
+		cidrRanges = append(cidrRanges, profileCIDRRanges...)
 	}
 
 	dnsZones = utils.Deduplicate(dnsZones)
@@ -131,7 +117,7 @@ func (c *osConfigurator) updateOSConfiguration(ctx context.Context) error {
 		}
 	}
 
-	err := configureOS(ctx, &osConfig{
+	err = configureOS(ctx, &osConfig{
 		tunName:    c.tunName,
 		tunIPv6:    c.tunIPv6,
 		tunIPv4:    c.tunIPv4,
@@ -154,14 +140,14 @@ func (c *osConfigurator) getDNSZonesAndCIDRRangesForProfile(ctx context.Context,
 	defer func() {
 		if shouldClearCacheForRoot {
 			if err := c.clientCache.ClearForRoot(profileName); err != nil {
-				log.ErrorContext(ctx, "Error while clearing client cache", "profile", profileName, "error", err)
+				slog.ErrorContext(ctx, "Error while clearing client cache", "profile", profileName, "error", err)
 			}
 		}
 	}()
 
 	rootClient, err := c.clientCache.Get(ctx, profileName, "" /*leafClusterName*/)
 	if err != nil {
-		log.WarnContext(ctx,
+		slog.WarnContext(ctx,
 			"Failed to get root cluster client from cache, profile may be expired, not configuring VNet for this cluster",
 			"profile", profileName, "error", err)
 
@@ -169,7 +155,7 @@ func (c *osConfigurator) getDNSZonesAndCIDRRangesForProfile(ctx context.Context,
 	}
 	clusterConfig, err := c.clusterConfigCache.GetClusterConfig(ctx, rootClient)
 	if err != nil {
-		log.WarnContext(ctx,
+		slog.WarnContext(ctx,
 			"Failed to load VNet configuration, profile may be expired, not configuring VNet for this cluster",
 			"profile", profileName, "error", err)
 
@@ -181,7 +167,7 @@ func (c *osConfigurator) getDNSZonesAndCIDRRangesForProfile(ctx context.Context,
 
 	leafClusters, err := getLeafClusters(ctx, rootClient)
 	if err != nil {
-		log.WarnContext(ctx,
+		slog.WarnContext(ctx,
 			"Failed to list leaf clusters, profile may be expired, not configuring VNet for leaf clusters of this cluster",
 			"profile", profileName, "error", err)
 
@@ -196,7 +182,7 @@ func (c *osConfigurator) getDNSZonesAndCIDRRangesForProfile(ctx context.Context,
 	for _, leafClusterName := range leafClusters {
 		clusterClient, err := c.clientCache.Get(ctx, profileName, leafClusterName)
 		if err != nil {
-			log.WarnContext(ctx,
+			slog.WarnContext(ctx,
 				"Failed to create leaf cluster client, not configuring VNet for this cluster",
 				"profile", profileName, "leaf_cluster", leafClusterName, "error", err)
 			continue
@@ -204,7 +190,7 @@ func (c *osConfigurator) getDNSZonesAndCIDRRangesForProfile(ctx context.Context,
 
 		clusterConfig, err := c.clusterConfigCache.GetClusterConfig(ctx, clusterClient)
 		if err != nil {
-			log.WarnContext(ctx,
+			slog.WarnContext(ctx,
 				"Failed to load VNet configuration, not configuring VNet for this cluster",
 				"profile", profileName, "leaf_cluster", leafClusterName, "error", err)
 			continue

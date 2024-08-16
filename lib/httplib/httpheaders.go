@@ -62,10 +62,9 @@ func newCSPCache() *cspCache {
 	}
 }
 
-// CSPMap holds a map of Content Security Policy.
-type CSPMap map[string][]string
+type cspMap map[string][]string
 
-var defaultContentSecurityPolicy = CSPMap{
+var defaultContentSecurityPolicy = cspMap{
 	"default-src": {"'self'"},
 	"script-src":  {"'self'"},
 	// specify CSP directives not covered by `default-src`
@@ -78,24 +77,24 @@ var defaultContentSecurityPolicy = CSPMap{
 	"style-src":  {"'self'", "'unsafe-inline'"},
 }
 
-var defaultFontSrc = CSPMap{"font-src": {"'self'", "data:"}}
-var defaultConnectSrc = CSPMap{"connect-src": {"'self'", "wss:"}}
+var defaultFontSrc = cspMap{"font-src": {"'self'", "data:"}}
+var defaultConnectSrc = cspMap{"connect-src": {"'self'", "wss:"}}
 
-var stripeSecurityPolicy = CSPMap{
+var stripeSecurityPolicy = cspMap{
 	// auto-pay plans in Cloud use stripe.com to manage billing information
 	"script-src": {"https://js.stripe.com"},
 	"frame-src":  {"https://js.stripe.com"},
 }
 
-var wasmSecurityPolicy = CSPMap{
+var wasmSecurityPolicy = cspMap{
 	"script-src": {"'self'", "'wasm-unsafe-eval'"},
 }
 
 // combineCSPMaps combines multiple CSP maps into a single map.
-// When multiple of the input CSPMap have the same key, their
+// When multiple of the input cspMaps have the same key, their
 // respective lists are concatenated.
-func combineCSPMaps(cspMaps ...CSPMap) CSPMap {
-	combinedMap := make(CSPMap)
+func combineCSPMaps(cspMaps ...cspMap) cspMap {
+	combinedMap := make(cspMap)
 
 	for _, cspMap := range cspMaps {
 		for key, value := range cspMap {
@@ -107,11 +106,11 @@ func combineCSPMaps(cspMaps ...CSPMap) CSPMap {
 	return combinedMap
 }
 
-// GetContentSecurityPolicyString combines multiple CSP maps into a single
+// getContentSecurityPolicyString combines multiple CSP maps into a single
 // CSP string, alphabetically sorted by the directive key.
 // When multiple of the input cspMaps have the same key, their
 // respective lists are concatenated.
-func GetContentSecurityPolicyString(cspMaps ...CSPMap) string {
+func getContentSecurityPolicyString(cspMaps ...cspMap) string {
 	combined := combineCSPMaps(cspMaps...)
 
 	keys := make([]string, 0, len(combined))
@@ -176,8 +175,8 @@ func SetDefaultSecurityHeaders(h http.Header) {
 	h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 }
 
-func getIndexContentSecurityPolicy(withStripe, withWasm bool) CSPMap {
-	cspMaps := []CSPMap{defaultContentSecurityPolicy, defaultFontSrc, defaultConnectSrc}
+func getIndexContentSecurityPolicy(withStripe, withWasm bool) cspMap {
+	cspMaps := []cspMap{defaultContentSecurityPolicy, defaultFontSrc, defaultConnectSrc}
 
 	if withStripe {
 		cspMaps = append(cspMaps, stripeSecurityPolicy)
@@ -210,7 +209,7 @@ func getIndexContentSecurityPolicyString(cfg proto.Features, urlPath string) str
 
 	// Nothing found in cache, calculate regex and result
 	withWasm := desktopSessionRe.MatchString(urlPath) || recordingRe.MatchString(urlPath)
-	cspString := GetContentSecurityPolicyString(
+	cspString := getContentSecurityPolicyString(
 		getIndexContentSecurityPolicy(withStripe, withWasm),
 	)
 	// Add result to cache
@@ -232,9 +231,9 @@ func getRedirectPageContentSecurityPolicyString(scriptSrc string) string {
 		return cspString
 	}
 
-	cspString := GetContentSecurityPolicyString(
+	cspString := getContentSecurityPolicyString(
 		defaultContentSecurityPolicy,
-		CSPMap{
+		cspMap{
 			"script-src": {"'" + scriptSrc + "'"},
 		},
 	)

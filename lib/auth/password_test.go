@@ -77,14 +77,9 @@ func setupPasswordSuite(t *testing.T) *passwordSuite {
 		ClusterName: "me.localhost",
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		s.bk.Close()
-	})
-
 	authConfig := &InitConfig{
 		ClusterName:            clusterName,
 		Backend:                s.bk,
-		VersionStorage:         NewFakeTeleportVersion(),
 		Authority:              authority.New(),
 		SkipPeriodicOperations: true,
 	}

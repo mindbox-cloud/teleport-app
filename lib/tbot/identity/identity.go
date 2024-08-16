@@ -69,7 +69,6 @@ var log = logutils.NewPackageLogger(teleport.ComponentKey, teleport.ComponentTBo
 
 // Identity is collection of raw key and certificate data as well as the
 // parsed equivalents that make up a Teleport identity.
-// TODO(nklaassen): split SSH and TLS keys.
 type Identity struct {
 	// PrivateKeyBytes is a PEM encoded private key
 	PrivateKeyBytes []byte
@@ -106,8 +105,6 @@ type Identity struct {
 	// ClusterName is a name of host's cluster determined from the
 	// x509 certificate.
 	ClusterName string
-	// TLSIdentity is the parsed TLS identity based on the X509 certificate.
-	TLSIdentity *tlsca.Identity
 }
 
 // LoadIdentityParams contains parameters beyond proto.Certs needed to load a
@@ -173,7 +170,7 @@ func ReadIdentityFromStore(params *LoadIdentityParams, certs *proto.Certs) (*Ide
 		return nil, trace.Wrap(err, "parsing ssh identity")
 	}
 
-	clusterName, tlsIdent, x509Cert, tlsCert, tlsCAPool, err := ParseTLSIdentity(
+	clusterName, x509Cert, tlsCert, tlsCAPool, err := ParseTLSIdentity(
 		params.PrivateKeyBytes, certs.TLS, certs.TLSCACerts,
 	)
 	if err != nil {
@@ -198,54 +195,41 @@ func ReadIdentityFromStore(params *LoadIdentityParams, certs *proto.Certs) (*Ide
 		X509Cert:        x509Cert,
 		TLSCert:         tlsCert,
 		TLSCAPool:       tlsCAPool,
-		TLSIdentity:     tlsIdent,
 	}, nil
 }
 
 // ParseTLSIdentity reads TLS identity from key pair
 func ParseTLSIdentity(
 	keyBytes []byte, certBytes []byte, caCertsBytes [][]byte,
-) (
-	clusterName string,
-	tlsIdentity *tlsca.Identity,
-	x509Cert *x509.Certificate,
-	tlsCert *tls.Certificate,
-	certPool *x509.CertPool,
-	err error,
-) {
+) (clusterName string, x509Cert *x509.Certificate, tlsCert *tls.Certificate, certPool *x509.CertPool, err error) {
 	x509Cert, err = tlsca.ParseCertificatePEM(certBytes)
 	if err != nil {
-		return "", nil, nil, nil, nil, trace.Wrap(err, "parsing certificate")
+		return "", nil, nil, nil, trace.Wrap(err, "parsing certificate")
 	}
 
 	if len(x509Cert.Issuer.Organization) == 0 {
-		return "", nil, nil, nil, nil, trace.BadParameter("certificate missing CA organization")
+		return "", nil, nil, nil, trace.BadParameter("certificate missing CA organization")
 	}
 	clusterName = x509Cert.Issuer.Organization[0]
 	if clusterName == "" {
-		return "", nil, nil, nil, nil, trace.BadParameter("certificate missing cluster name")
+		return "", nil, nil, nil, trace.BadParameter("certificate missing cluster name")
 	}
 
 	certPool = x509.NewCertPool()
 	for j := range caCertsBytes {
 		parsedCert, err := tlsca.ParseCertificatePEM(caCertsBytes[j])
 		if err != nil {
-			return "", nil, nil, nil, nil, trace.Wrap(err, "parsing CA certificate")
+			return "", nil, nil, nil, trace.Wrap(err, "parsing CA certificate")
 		}
 		certPool.AddCert(parsedCert)
 	}
 
 	cert, err := keys.X509KeyPair(certBytes, keyBytes)
 	if err != nil {
-		return "", nil, nil, nil, nil, trace.Wrap(err, "parse private key")
+		return "", nil, nil, nil, trace.Wrap(err, "parse private key")
 	}
 
-	tlsIdent, err := tlsca.FromSubject(x509Cert.Subject, x509Cert.NotAfter)
-	if err != nil {
-		return "", nil, nil, nil, nil, trace.Wrap(err, "parse tls identity")
-	}
-
-	return clusterName, tlsIdent, x509Cert, &cert, certPool, nil
+	return clusterName, x509Cert, &cert, certPool, nil
 }
 
 // parseSSHIdentity reads identity from initialized keypair

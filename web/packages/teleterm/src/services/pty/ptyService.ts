@@ -23,26 +23,21 @@ import { RuntimeSettings } from 'teleterm/mainProcess/types';
 import { buildPtyOptions } from './ptyHost/buildPtyOptions';
 import { createPtyHostClient } from './ptyHost/ptyHostClient';
 import { createPtyProcess } from './ptyHost/ptyProcess';
-import { PtyServiceClient, PtyOptions } from './types';
-import { getWindowsPty } from './ptyHost/windowsPty';
+import { PtyServiceClient, SshOptions } from './types';
 
 export function createPtyService(
   address: string,
   credentials: ChannelCredentials,
   runtimeSettings: RuntimeSettings,
-  options: PtyOptions
+  sshOptions: SshOptions
 ): PtyServiceClient {
   const ptyHostClient = createPtyHostClient(address, credentials);
 
   return {
     createPtyProcess: async command => {
-      const windowsPty = getWindowsPty(runtimeSettings, options.terminal);
       const { processOptions, creationStatus } = await buildPtyOptions(
         runtimeSettings,
-        {
-          ssh: options.ssh,
-          windowsPty,
-        },
+        sshOptions,
         command
       );
       const ptyId = await ptyHostClient.createPtyProcess(processOptions);
@@ -51,7 +46,6 @@ export function createPtyService(
       return {
         process: createPtyProcess(ptyHostClient, ptyId),
         creationStatus,
-        windowsPty,
       };
     },
   };

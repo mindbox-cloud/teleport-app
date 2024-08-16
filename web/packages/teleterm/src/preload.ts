@@ -74,14 +74,7 @@ async function getElectronGlobals(): Promise<ElectronGlobals> {
     credentials.shared,
     runtimeSettings,
     {
-      ssh: {
-        noResume: mainProcessClient.configService.get('ssh.noResume').value,
-      },
-      terminal: {
-        windowsBackend: mainProcessClient.configService.get(
-          'terminal.windowsBackend'
-        ).value,
-      },
+      noResume: mainProcessClient.configService.get('ssh.noResume').value,
     }
   );
   const {

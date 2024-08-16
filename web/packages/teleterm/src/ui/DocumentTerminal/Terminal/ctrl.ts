@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import '@xterm/xterm/css/xterm.css';
-import { IDisposable, ITheme, Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
+import 'xterm/css/xterm.css';
+import { IDisposable, ITheme, Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
 import { debounce } from 'shared/utils/highbar';
 
-import { WindowsPty } from 'teleterm/services/pty';
 import { IPtyProcess } from 'teleterm/sharedProcess/ptyHost';
 import Logger from 'teleterm/logger';
 
@@ -31,7 +30,6 @@ type Options = {
   el: HTMLElement;
   fontSize: number;
   theme: ITheme;
-  windowsPty: WindowsPty;
 };
 
 export default class TtyTerminal {
@@ -70,10 +68,6 @@ export default class TtyTerminal {
       scrollback: 5000,
       minimumContrastRatio: 4.5, // minimum for WCAG AA compliance
       theme: this.options.theme,
-      windowsPty: this.options.windowsPty && {
-        backend: this.options.windowsPty.useConpty ? 'conpty' : 'winpty',
-        buildNumber: this.options.windowsPty.buildNumber,
-      },
       windowOptions: {
         setWinSizeChars: true,
       },

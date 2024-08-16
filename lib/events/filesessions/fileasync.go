@@ -534,9 +534,7 @@ func (u *Uploader) upload(ctx context.Context, up *upload) error {
 		return trace.Errorf("operation has been canceled, uploader is closed")
 	case <-stream.Done():
 		if errStream, ok := stream.(interface{ Error() error }); ok {
-			if err := errStream.Error(); err != nil {
-				return trace.ConnectionProblem(err, err.Error())
-			}
+			return trace.ConnectionProblem(errStream.Error(), errStream.Error().Error())
 		}
 
 		return trace.ConnectionProblem(nil, "upload stream terminated unexpectedly")

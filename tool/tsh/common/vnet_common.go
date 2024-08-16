@@ -177,7 +177,6 @@ func (p *vnetAppProvider) reissueAppCert(ctx context.Context, tc *client.Telepor
 		Name:        app.GetName(),
 		PublicAddr:  app.GetPublicAddr(),
 		ClusterName: tc.SiteName,
-		URI:         app.GetURI(),
 	}
 
 	profile, err := tc.ProfileStatus()

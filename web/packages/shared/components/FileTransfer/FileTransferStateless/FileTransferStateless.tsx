@@ -57,6 +57,7 @@ export function FileTransferStateless(props: FileTransferStatelessProps) {
   return (
     <Container
       data-testid="file-transfer-container"
+      backgroundColor={props.backgroundColor}
       onKeyDown={e => {
         if (e.key !== 'Escape') {
           return;
@@ -74,8 +75,7 @@ export function FileTransferStateless(props: FileTransferStatelessProps) {
         <ButtonClose onClick={props.onClose} />
       </Flex>
       {items.Form}
-      {/* TODO(bl-nero): This should be a part of the new input design (in the helper text line). */}
-      <Text color="error.hover" typography="body3" mt={1}>
+      <Text color="error.hover" typography="body2" mt={1}>
         {props.errorText}
       </Text>
       <FileList files={props.files} onCancel={props.onCancel} />

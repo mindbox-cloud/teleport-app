@@ -20,7 +20,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 
 import { Box, ButtonLink, Flex, Label, Text } from 'design';
-import { CheckboxInput } from 'design/Checkbox';
+import { StyledCheckbox } from 'design/Checkbox';
 
 import { ResourceIcon } from 'design/ResourceIcon';
 
@@ -31,10 +31,7 @@ import { HoverTooltip } from 'shared/components/ToolTip';
 import { ResourceItemProps } from '../types';
 import { PinButton } from '../shared/PinButton';
 import { CopyButton } from '../shared/CopyButton';
-import {
-  BackgroundColorProps,
-  getBackgroundColor,
-} from '../shared/getBackgroundColor';
+import { getBackgroundColor } from '../shared/getBackgroundColor';
 
 // Since we do a lot of manual resizing and some absolute positioning, we have
 // to put some layout constants in place here.
@@ -75,8 +72,8 @@ export function ResourceCard({
 
   const [hovered, setHovered] = useState(false);
 
-  const innerContainer = useRef<HTMLDivElement | null>(null);
-  const labelsInnerContainer = useRef<HTMLDivElement>(null);
+  const innerContainer = useRef<HTMLElement | null>(null);
+  const labelsInnerContainer = useRef<HTMLElement>(null);
   const collapseTimeout = useRef<ReturnType<typeof setTimeout>>(null);
 
   // This effect installs a resize observer whose purpose is to detect the size
@@ -176,7 +173,7 @@ export function ResourceCard({
           selected={selected}
         >
           <HoverTooltip tipContent={selected ? 'Deselect' : 'Select'}>
-            <CheckboxInput
+            <StyledCheckbox
               css={`
                 position: absolute;
                 top: 16px;
@@ -216,7 +213,9 @@ export function ResourceCard({
             <Flex flexDirection="row" alignItems="center">
               <SingleLineBox flex="1">
                 <HoverTooltip tipContent={name} showOnlyOnOverflow>
-                  <Text typography="body1">{name}</Text>
+                  <Text typography="h5" fontWeight={300}>
+                    {name}
+                  </Text>
                 </HoverTooltip>
               </SingleLineBox>
               {hovered && <CopyButton name={name} mr={2} />}
@@ -228,14 +227,14 @@ export function ResourceCard({
               </ResTypeIconBox>
               {primaryDesc && (
                 <SingleLineBox ml={1} title={primaryDesc}>
-                  <Text typography="body3" color="text.slightlyMuted">
+                  <Text typography="body2" color="text.slightlyMuted">
                     {primaryDesc}
                   </Text>
                 </SingleLineBox>
               )}
               {secondaryDesc && (
                 <SingleLineBox ml={2} title={secondaryDesc}>
-                  <Text typography="body3" color="text.muted">
+                  <Text typography="body2" color="text.muted">
                     {secondaryDesc}
                   </Text>
                 </SingleLineBox>
@@ -292,7 +291,7 @@ const CardContainer = styled(Box)`
   position: relative;
 `;
 
-const CardOuterContainer = styled(Box)<{ showAllLabels?: boolean }>`
+const CardOuterContainer = styled(Box)`
   border-radius: ${props => props.theme.radii[3]}px;
 
   ${props =>
@@ -311,7 +310,7 @@ const CardOuterContainer = styled(Box)<{ showAllLabels?: boolean }>`
 
     // We use a pseudo element for the shadow with position: absolute in order to prevent
     // the shadow from increasing the size of the layout and causing scrollbar flicker.
-    &:after {
+    :after {
       box-shadow: ${props => props.theme.boxShadow[3]};
       border-radius: ${props => props.theme.radii[3]}px;
       content: '';
@@ -334,13 +333,13 @@ const CardOuterContainer = styled(Box)<{ showAllLabels?: boolean }>`
  * layout; we may need to globally set the card height to fixed size on the
  * outer container.
  */
-const CardInnerContainer = styled(Flex)<BackgroundColorProps>`
+const CardInnerContainer = styled(Flex)`
   border: ${props => props.theme.borders[2]}
     ${props => props.theme.colors.spotBackground[0]};
   border-radius: ${props => props.theme.radii[3]}px;
   background-color: ${props => getBackgroundColor(props)};
 
-  &:hover {
+  :hover {
     // Make the border invisible instead of removing it, this is to prevent things from shifting due to the size change.
     border: ${props => props.theme.borders[2]} rgba(0, 0, 0, 0);
   }
@@ -357,7 +356,7 @@ const SingleLineBox = styled(Box)`
  * single row, or all labels. It hides the internal container's overflow if more
  * than one row of labels exist, but is not yet visible.
  */
-const LabelsContainer = styled(Box)<{ showAll?: boolean }>`
+const LabelsContainer = styled(Box)`
   ${props => (props.showAll ? '' : `height: ${labelRowHeight}px;`)}
   overflow: hidden;
 `;

@@ -34,6 +34,5 @@ export function getEmptyResourceState(): ResourceMap {
     user_group: {},
     windows_desktop: {},
     role: {},
-    saml_idp_service_provider: {},
   };
 }

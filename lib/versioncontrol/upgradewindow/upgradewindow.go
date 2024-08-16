@@ -36,7 +36,6 @@ import (
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/utils"
 	"github.com/gravitational/teleport/lib/utils/interval"
-	"github.com/gravitational/teleport/lib/versioncontrol"
 )
 
 const (
@@ -45,6 +44,9 @@ const (
 
 	// unitScheduleFile is the name of the file to which the unit schedule is exported.
 	unitScheduleFile = "schedule"
+
+	// unitConfigDir is the configuration directory of the teleport-upgrade unit.
+	unitConfigDir = "/etc/teleport-upgrade.d"
 )
 
 // ExportFunc represents the ExportUpgradeWindows rpc exposed by auth servers.
@@ -397,7 +399,7 @@ type systemdDriver struct {
 
 func NewSystemdUnitDriver(cfg SystemdUnitDriverConfig) (Driver, error) {
 	if cfg.ConfigDir == "" {
-		cfg.ConfigDir = versioncontrol.UnitConfigDir
+		cfg.ConfigDir = unitConfigDir
 	}
 
 	return &systemdDriver{cfg: cfg}, nil

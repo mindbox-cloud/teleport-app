@@ -64,13 +64,11 @@ import (
 	"github.com/gravitational/teleport/api/utils"
 	"github.com/gravitational/teleport/api/utils/keys"
 	"github.com/gravitational/teleport/api/utils/sshutils"
-	"github.com/gravitational/teleport/entitlements"
 	"github.com/gravitational/teleport/lib/auth/authclient"
 	"github.com/gravitational/teleport/lib/auth/mocku2f"
 	"github.com/gravitational/teleport/lib/auth/testauthority"
 	wantypes "github.com/gravitational/teleport/lib/auth/webauthntypes"
 	"github.com/gravitational/teleport/lib/authz"
-	"github.com/gravitational/teleport/lib/cryptosuites"
 	"github.com/gravitational/teleport/lib/defaults"
 	dtauthz "github.com/gravitational/teleport/lib/devicetrust/authz"
 	"github.com/gravitational/teleport/lib/modules"
@@ -789,10 +787,8 @@ func TestGenerateUserCerts_deviceExtensions(t *testing.T) {
 	user, _, err := CreateUserAndRole(testServer.Auth(), "llama", []string{"llama"}, nil)
 	require.NoError(t, err, "CreateUserAndRole failed")
 
-	key, err := cryptosuites.GenerateKeyWithAlgorithm(cryptosuites.ECDSAP256)
-	require.NoError(t, err, "GenerateKeyWithAlgorithm failed")
-	publicKeyPEM, err := keys.MarshalPublicKey(key.Public())
-	require.NoError(t, err, "MarshalPublicKey failed")
+	_, pub, err := testauthority.New().GenerateKeyPair()
+	require.NoError(t, err, "GenerateKeyPair failed")
 
 	wantExtensions := &tlsca.DeviceExtensions{
 		DeviceID:     "device1",
@@ -838,9 +834,9 @@ func TestGenerateUserCerts_deviceExtensions(t *testing.T) {
 			require.NoError(t, err, "NewClient failed")
 
 			resp, err := userClient.GenerateUserCerts(ctx, proto.UserCertsRequest{
-				TLSPublicKey: publicKeyPEM,
-				Username:     user.GetName(),
-				Expires:      testServer.Clock().Now().Add(1 * time.Hour),
+				PublicKey: pub,
+				Username:  user.GetName(),
+				Expires:   testServer.Clock().Now().Add(1 * time.Hour),
 			})
 			require.NoError(t, err, "GenerateUserCerts failed")
 
@@ -860,9 +856,7 @@ func TestGenerateUserCerts_deviceAuthz(t *testing.T) {
 	modules.SetTestModules(t, &modules.TestModules{
 		TestBuildType: modules.BuildEnterprise, // required for Device Trust.
 		TestFeatures: modules.Features{
-			Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-				entitlements.App: {Enabled: true},
-			},
+			App: true,
 		},
 	})
 
@@ -942,12 +936,13 @@ func TestGenerateUserCerts_deviceAuthz(t *testing.T) {
 	clientWithoutDevice.SetMFAPromptConstructor(promptConstructor)
 	clientWithDevice.SetMFAPromptConstructor(promptConstructor)
 
-	// Create public keys for UserCertsRequest.
-	_, sshPub, _, tlsPub := newSSHAndTLSKeyPairs(t)
+	// Create a public key for UserCertsRequest.
+	_, pub, err := testauthority.New().GenerateKeyPair()
+	require.NoError(t, err, "GenerateKeyPair failed")
 
 	expires := clock.Now().Add(1 * time.Hour)
 	sshReq := proto.UserCertsRequest{
-		SSHPublicKey:   sshPub,
+		PublicKey:      pub,
 		Username:       username,
 		Expires:        expires,
 		RouteToCluster: clusterName,
@@ -956,7 +951,7 @@ func TestGenerateUserCerts_deviceAuthz(t *testing.T) {
 		SSHLogin:       "llama",
 	}
 	appReq := proto.UserCertsRequest{
-		TLSPublicKey:   tlsPub,
+		PublicKey:      pub,
 		Username:       username,
 		Expires:        expires,
 		RouteToCluster: clusterName,
@@ -968,7 +963,7 @@ func TestGenerateUserCerts_deviceAuthz(t *testing.T) {
 		},
 	}
 	winReq := proto.UserCertsRequest{
-		TLSPublicKey:   tlsPub,
+		PublicKey:      pub,
 		Username:       username,
 		Expires:        expires,
 		RouteToCluster: clusterName,
@@ -1345,7 +1340,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 		}
 	}
 
-	_, sshPub, _, tlsPub := newSSHAndTLSKeyPairs(t)
+	_, pub, err := testauthority.New().GenerateKeyPair()
+	require.NoError(t, err)
 
 	// Used for device trust tests.
 	wantDeviceExtensions := tlsca.DeviceExtensions{
@@ -1363,8 +1359,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "ssh using webauthn",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires:  clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1395,8 +1391,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "ssh - adjusted expiry",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires:  clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1427,8 +1423,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "k8s",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires:           clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1462,8 +1458,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "db",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires: clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1500,8 +1496,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "app",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires: clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1530,7 +1526,7 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 					require.True(t, net.ParseIP(identity.LoginIP).IsLoopback())
 					require.Equal(t, []string{teleport.UsageAppsOnly}, identity.Usage)
 					require.Equal(t, "app-a", identity.RouteToApp.Name)
-					// session ID should be set to a random ID, corresponding to an app session.
+					// session ID should be set to a random UUID, corresponding to an app session.
 					require.NotZero(t, identity.RouteToApp.SessionID)
 				},
 			},
@@ -1539,8 +1535,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "db with ttl limit disabled",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry should *not* be adjusted to single user cert TTL,
 					// since ttl limiting is disabled when requester is a local proxy tunnel.
 					// It *should* be adjusted to the user cert ttl though.
@@ -1578,8 +1574,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "kube with ttl limit disabled",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry should *not* be adjusted to single user cert TTL,
 					// since ttl limiting is disabled when requester is a local proxy.
 					// It *should* be adjusted to the user cert ttl though.
@@ -1615,8 +1611,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "app with ttl limit disabled",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry should *not* be adjusted to single user cert TTL,
 					// since ttl limiting is disabled when requester is a local proxy.
 					// It *should* be adjusted to the user cert ttl though.
@@ -1647,7 +1643,7 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 					require.True(t, net.ParseIP(identity.LoginIP).IsLoopback())
 					require.Equal(t, []string{teleport.UsageAppsOnly}, identity.Usage)
 					require.Equal(t, "app-a", identity.RouteToApp.Name)
-					// session ID should be set to a random ID, corresponding to an app session.
+					// session ID should be set to a random UUID, corresponding to an app session.
 					require.NotZero(t, identity.RouteToApp.SessionID)
 				},
 			},
@@ -1656,8 +1652,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "desktops",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires: clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1693,12 +1689,11 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "fail - wrong usage",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
-					Expires:      clock.Now().Add(teleport.UserSingleUseCertTTL),
-					Usage:        proto.UserCertsRequest_All,
-					NodeName:     "node-a",
+					PublicKey: pub,
+					Username:  user.GetName(),
+					Expires:   clock.Now().Add(teleport.UserSingleUseCertTTL),
+					Usage:     proto.UserCertsRequest_All,
+					NodeName:  "node-a",
 				},
 				verifyErr: func(t require.TestingT, err error, i ...interface{}) {
 					require.ErrorContains(t, err, "all purposes")
@@ -1709,13 +1704,12 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "fail - mfa challenge fail",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
-					Expires:      clock.Now().Add(teleport.UserSingleUseCertTTL),
-					Usage:        proto.UserCertsRequest_SSH,
-					NodeName:     "node-a",
-					SSHLogin:     "role",
+					PublicKey: pub,
+					Username:  user.GetName(),
+					Expires:   clock.Now().Add(teleport.UserSingleUseCertTTL),
+					Usage:     proto.UserCertsRequest_SSH,
+					NodeName:  "node-a",
+					SSHLogin:  "role",
 				},
 				mfaRequiredHandler: func(t *testing.T, required proto.MFARequired) {
 					require.Equal(t, proto.MFARequired_MFA_REQUIRED_YES, required)
@@ -1745,12 +1739,12 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			opts: generateUserSingleUseCertsTestOpts{
 				// Same as SSH options. Nothing special here.
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					Username:     user.GetName(),
-					Expires:      clock.Now().Add(teleport.UserSingleUseCertTTL),
-					Usage:        proto.UserCertsRequest_SSH,
-					NodeName:     "node-a",
-					SSHLogin:     "role",
+					PublicKey: pub,
+					Username:  user.GetName(),
+					Expires:   clock.Now().Add(teleport.UserSingleUseCertTTL),
+					Usage:     proto.UserCertsRequest_SSH,
+					NodeName:  "node-a",
+					SSHLogin:  "role",
 				},
 				mfaRequiredHandler: func(t *testing.T, required proto.MFARequired) {
 					require.Equal(t, proto.MFARequired_MFA_REQUIRED_YES, required)
@@ -1792,10 +1786,10 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			opts: generateUserSingleUseCertsTestOpts{
 				// Same as Database options. Nothing special here.
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
-					Expires:      clock.Now().Add(teleport.UserSingleUseCertTTL),
-					Usage:        proto.UserCertsRequest_Database,
+					PublicKey: pub,
+					Username:  user.GetName(),
+					Expires:   clock.Now().Add(teleport.UserSingleUseCertTTL),
+					Usage:     proto.UserCertsRequest_Database,
 					RouteToDatabase: proto.RouteToDatabase{
 						ServiceName: "db-a",
 					},
@@ -1828,12 +1822,11 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "mfa unspecified when no SSHLogin provided",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
-					Expires:      clock.Now().Add(teleport.UserSingleUseCertTTL),
-					Usage:        proto.UserCertsRequest_SSH,
-					NodeName:     "node-a",
+					PublicKey: pub,
+					Username:  user.GetName(),
+					Expires:   clock.Now().Add(teleport.UserSingleUseCertTTL),
+					Usage:     proto.UserCertsRequest_SSH,
+					NodeName:  "node-a",
 				},
 				mfaRequiredHandler: func(t *testing.T, required proto.MFARequired) {
 					require.Equal(t, proto.MFARequired_MFA_REQUIRED_UNSPECIFIED, required)
@@ -1851,8 +1844,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "k8s in leaf cluster",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires:           clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1887,8 +1880,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "db in leaf cluster",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires: clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1926,8 +1919,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "app in leaf cluster",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					TLSPublicKey: tlsPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires: clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -1957,7 +1950,7 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 					require.True(t, net.ParseIP(identity.LoginIP).IsLoopback())
 					require.Equal(t, []string{teleport.UsageAppsOnly}, identity.Usage)
 					require.Equal(t, "app-b", identity.RouteToApp.Name)
-					// session ID should be set to a random ID, corresponding to an app session.
+					// session ID should be set to a random UUID, corresponding to an app session.
 					require.NotZero(t, identity.RouteToApp.SessionID)
 				},
 			},
@@ -1966,8 +1959,8 @@ func TestGenerateUserCerts_singleUseCerts(t *testing.T) {
 			desc: "ssh in leaf node",
 			opts: generateUserSingleUseCertsTestOpts{
 				initReq: &proto.UserCertsRequest{
-					SSHPublicKey: sshPub,
-					Username:     user.GetName(),
+					PublicKey: pub,
+					Username:  user.GetName(),
 					// This expiry is longer than allowed, should be
 					// automatically adjusted.
 					Expires:        clock.Now().Add(2 * teleport.UserSingleUseCertTTL),
@@ -4195,11 +4188,7 @@ func TestExport(t *testing.T) {
 // a SAML connector.
 func TestSAMLValidation(t *testing.T) {
 	modules.SetTestModules(t, &modules.TestModules{
-		TestFeatures: modules.Features{
-			Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-				entitlements.SAML: {Enabled: true},
-			},
-		},
+		TestFeatures: modules.Features{SAML: true},
 	})
 
 	// minimal entity_descriptor to pass validation. not actually valid
@@ -4471,8 +4460,8 @@ func TestUpsertApplicationServerOrigin(t *testing.T) {
 func TestGetAccessGraphConfig(t *testing.T) {
 	modules.SetTestModules(t, &modules.TestModules{
 		TestFeatures: modules.Features{
-			Entitlements: map[entitlements.EntitlementKind]modules.EntitlementInfo{
-				entitlements.Policy: {Enabled: true},
+			Policy: modules.PolicyFeature{
+				Enabled: true,
 			},
 		},
 	})
@@ -4486,10 +4475,9 @@ func TestGetAccessGraphConfig(t *testing.T) {
 	user, _, err := CreateUserAndRole(server.Auth(), "test", []string{"role"}, nil)
 	require.NoError(t, err)
 	positiveResponse := &clusterconfigpb.AccessGraphConfig{
-		Enabled:           true,
-		Ca:                []byte("ca"),
-		Address:           "addr",
-		SecretsScanConfig: &clusterconfigpb.AccessGraphSecretsScanConfiguration{},
+		Enabled: true,
+		Ca:      []byte("ca"),
+		Address: "addr",
 	}
 
 	tests := []struct {

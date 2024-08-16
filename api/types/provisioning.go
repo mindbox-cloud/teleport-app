@@ -121,16 +121,13 @@ type ProvisionToken interface {
 	GetAllowRules() []*TokenRule
 	// SetAllowRules sets the allow rules
 	SetAllowRules([]*TokenRule)
-	// GetGCPRules will return the GCP rules within this token.
-	GetGCPRules() *ProvisionTokenSpecV2GCP
 	// GetAWSIIDTTL returns the TTL of EC2 IIDs
 	GetAWSIIDTTL() Duration
 	// GetJoinMethod returns joining method that must be used with this token.
 	GetJoinMethod() JoinMethod
 	// GetBotName returns the BotName field which must be set for joining bots.
 	GetBotName() string
-	// IsStatic returns true if the token is statically configured
-	IsStatic() bool
+
 	// GetSuggestedLabels returns the set of labels that the resource should add when adding itself to the cluster
 	GetSuggestedLabels() Labels
 
@@ -387,11 +384,6 @@ func (p *ProvisionTokenV2) SetAllowRules(rules []*TokenRule) {
 	p.Spec.Allow = rules
 }
 
-// GetGCPRules will return the GCP rules within this token.
-func (p *ProvisionTokenV2) GetGCPRules() *ProvisionTokenSpecV2GCP {
-	return p.Spec.GCP
-}
-
 // GetAWSIIDTTL returns the TTL of EC2 IIDs
 func (p *ProvisionTokenV2) GetAWSIIDTTL() Duration {
 	return p.Spec.AWSIIDTTL
@@ -400,11 +392,6 @@ func (p *ProvisionTokenV2) GetAWSIIDTTL() Duration {
 // GetJoinMethod returns joining method that must be used with this token.
 func (p *ProvisionTokenV2) GetJoinMethod() JoinMethod {
 	return p.Spec.JoinMethod
-}
-
-// IsStatic returns true if the token is statically configured
-func (p *ProvisionTokenV2) IsStatic() bool {
-	return p.Origin() == OriginConfigFile
 }
 
 // GetBotName returns the BotName field which must be set for joining bots.
@@ -548,16 +535,14 @@ func ProvisionTokensToV1(in []ProvisionToken) []ProvisionTokenV1 {
 	return out
 }
 
-// ProvisionTokensFromStatic converts static tokens to resource list
-func ProvisionTokensFromStatic(in []ProvisionTokenV1) []ProvisionToken {
+// ProvisionTokensFromV1 converts V1 provision tokens to resource list
+func ProvisionTokensFromV1(in []ProvisionTokenV1) []ProvisionToken {
 	if in == nil {
 		return nil
 	}
 	out := make([]ProvisionToken, len(in))
 	for i := range in {
-		tok := in[i].V2()
-		tok.SetOrigin(OriginConfigFile)
-		out[i] = tok
+		out[i] = in[i].V2()
 	}
 	return out
 }

@@ -18,8 +18,7 @@
 
 import Alert from './Alert';
 import Box from './Box';
-import {
-  Button,
+import Button, {
   ButtonPrimary,
   ButtonWarning,
   ButtonSecondary,
@@ -40,18 +39,7 @@ import LabelState from './LabelState';
 import Link from './Link';
 import { Mark } from './Mark';
 import Image from './Image';
-import Text, {
-  H1,
-  H2,
-  H3,
-  H4,
-  P1,
-  P2,
-  P3,
-  Subtitle1,
-  Subtitle2,
-  Subtitle3,
-} from './Text';
+import Text from './Text';
 import SideNav, { SideNavItem } from './SideNav';
 import { StepSlider } from './StepSlider';
 import TopNav from './TopNav';
@@ -68,50 +56,40 @@ export {
   Alert,
   Box,
   Button,
-  ButtonBorder,
   ButtonIcon,
   ButtonLink,
+  ButtonBorder,
   ButtonPrimary,
   ButtonSecondary,
-  ButtonText,
   ButtonWarning,
   ButtonWithMenu,
+  ButtonText,
   Card,
   CardSuccess,
   CardSuccessLogin,
   DocumentTitle,
   Flex,
-  H1,
-  H2,
-  H3,
-  H4,
-  Image,
   Indicator,
   Input,
   Label,
   LabelInput,
   LabelState,
-  Link,
   Mark,
-  Menu,
-  MenuItem,
-  MenuItemIcon,
-  P1,
-  P2,
-  P3,
+  Link,
   Pill,
   Popover,
+  Image,
   ResourceIcon,
   SideNav,
   SideNavItem,
   StepSlider,
-  Subtitle1,
-  Subtitle2,
-  Subtitle3,
   Text,
+  TopNav,
+  Menu,
+  MenuItem,
+  MenuItemIcon,
   TextArea,
   Toggle,
-  TopNav,
 };
 export type { TextAreaProps } from './TextArea';
 export * from './keyframes';

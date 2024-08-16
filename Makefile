@@ -6,14 +6,12 @@
 #  clean  : removes all build artifacts
 #  test   : runs tests
 
-.DEFAULT_GOAL := all
-
 # To update the Teleport version, update VERSION variable:
 # Naming convention:
 #   Stable releases:   "1.0.0"
 #   Pre-releases:      "1.0.0-alpha.1", "1.0.0-beta.2", "1.0.0-rc.3"
 #   Master/dev branch: "1.0.0-dev"
-VERSION=17.0.0-dev
+VERSION=16.1.0
 
 DOCKER_IMAGE ?= teleport
 
@@ -62,13 +60,6 @@ ARCH ?= $(GO_ENV_ARCH)
 FIPS ?=
 RELEASE = teleport-$(GITTAG)-$(OS)-$(ARCH)-bin
 
-# If we're building inside the cross-compiling buildbox, include the
-# cross compilation definitions so we select the correct compilers and
-# libraries.
-ifeq ($(BUILDBOX_MODE),cross)
-include build.assets/buildbox/cross-compile.mk
-endif
-
 # Include common makefile shared between OSS and Ent.
 include common.mk
 
@@ -80,16 +71,18 @@ FIPS_MESSAGE := with-FIPS-support
 RELEASE = teleport-$(GITTAG)-$(OS)-$(ARCH)-fips-bin
 endif
 
-# Look for the PAM header "security/pam_appl.h" to determine if we should
-# enable PAM support in teleport. A native build will have it in /usr/include.
-# Darwin has it in /usr/local/include (SIP prevents us from modifying/creating
-# it in /usr/include), and the ng buildbox has it in one of the
-# $(C_INCLUDE_PATH) paths.
-PAM_HEADER_CANDIDATES := $(subst :, ,$(C_INCLUDE_PATH)) /usr/local/include /usr/include
+# PAM support will only be built into Teleport if headers exist at build time.
 PAM_MESSAGE := without-PAM-support
-ifneq (,$(wildcard $(addsuffix /security/pam_appl.h,$(PAM_HEADER_CANDIDATES))))
+ifneq ("$(wildcard /usr/include/security/pam_appl.h)","")
 PAM_TAG := pam
 PAM_MESSAGE := with-PAM-support
+else
+# PAM headers for Darwin live under /usr/local/include/security instead, as SIP
+# prevents us from modifying/creating /usr/include/security on newer versions of MacOS
+ifneq ("$(wildcard /usr/local/include/security/pam_appl.h)","")
+PAM_TAG := pam
+PAM_MESSAGE := with-PAM-support
+endif
 endif
 
 # darwin universal (Intel + Apple Silicon combined) binary support
@@ -263,20 +256,17 @@ TEST_LOG_DIR = ${abspath ./test-logs}
 
 # Set CGOFLAG and BUILDFLAGS as needed for the OS/ARCH.
 ifeq ("$(OS)","linux")
+# True if $ARCH == amd64 || $ARCH == arm64
 ifeq ("$(ARCH)","arm64")
-ifneq ($(BUILDBOX_MODE),cross)
-ifeq (,$(IS_NATIVE_BUILD))
-CGOFLAG += CC=aarch64-linux-gnu-gcc
-endif
-endif
+	ifeq ($(IS_NATIVE_BUILD),"no")
+		CGOFLAG += CC=aarch64-linux-gnu-gcc
+	endif
 else ifeq ("$(ARCH)","arm")
 CGOFLAG = CGO_ENABLED=1
 
 # ARM builds need to specify the correct C compiler
-ifneq ($(BUILDBOX_MODE),cross)
-ifeq (,$(IS_NATIVE_BUILD))
+ifeq ($(IS_NATIVE_BUILD),"no")
 CC=arm-linux-gnueabihf-gcc
-endif
 endif
 
 # Add -debugtramp=2 to work around 24 bit CALL/JMP instruction offset.
@@ -416,7 +406,7 @@ $(ER_BPF_BUILDDIR):
 
 # Build BPF code
 $(ER_BPF_BUILDDIR)/%.bpf.o: bpf/enhancedrecording/%.bpf.c $(wildcard bpf/*.h) | $(ER_BPF_BUILDDIR)
-	$(CLANG) -g -O2 -target bpf -D__TARGET_ARCH_$(KERNEL_ARCH) $(BPF_INCLUDES) $(CLANG_BPF_SYS_INCLUDES) -c $(filter %.c,$^) -o $@
+	$(CLANG) -g -O2 -target bpf -D__TARGET_ARCH_$(KERNEL_ARCH) -I/usr/libbpf-${LIBBPF_VER}/include $(INCLUDES) $(CLANG_BPF_SYS_INCLUDES) -c $(filter %.c,$^) -o $@
 	$(LLVM_STRIP) -g $@ # strip useless DWARF info
 
 .PHONY: bpf-er-bytecode
@@ -690,16 +680,16 @@ release-windows: release-windows-unsigned
 # Makefile. Linux uses the `teleterm` target in build.assets/Makefile.
 #
 # Either CONNECT_TSH_BIN_PATH or CONNECT_TSH_APP_PATH environment variable
-# should be defined for the `pnpm package-term` command to succeed. CI sets
+# should be defined for the `yarn package-term` command to succeed. CI sets
 # this appropriately depending on whether a push build is running, or a
 # proper release (a proper release needs the APP_PATH as that points to
 # the complete signed package). See web/packages/teleterm/README.md for
 # details.
 .PHONY: release-connect
 release-connect: | $(RELEASE_DIR)
-	pnpm install --frozen-lockfile
-	pnpm build-term
-	pnpm package-term -c.extraMetadata.version=$(VERSION) --$(ELECTRON_BUILDER_ARCH)
+	yarn install --frozen-lockfile
+	yarn build-term
+	yarn package-term -c.extraMetadata.version=$(VERSION) --$(ELECTRON_BUILDER_ARCH)
 	# Only copy proper builds with tsh.app to $(RELEASE_DIR)
 	# Drop -universal "arch" from dmg name when copying to $(RELEASE_DIR)
 	if [ -n "$$CONNECT_TSH_APP_PATH" ]; then \
@@ -764,17 +754,6 @@ $(DIFF_TEST): $(wildcard $(TOOLINGDIR)/cmd/difftest/*.go)
 RERUN := $(TOOLINGDIR)/bin/rerun
 $(RERUN): $(wildcard $(TOOLINGDIR)/cmd/rerun/*.go)
 	cd $(TOOLINGDIR) && go build -o "$@" ./cmd/rerun
-
-RELEASE_NOTES_GEN := $(TOOLINGDIR)/bin/release-notes
-$(RELEASE_NOTES_GEN): $(wildcard $(TOOLINGDIR)/cmd/release-notes/*.go)
-	cd $(TOOLINGDIR) && go build -o "$@" ./cmd/release-notes
-#
-# Downloads and builds changelog from source.
-# PHONY is set so that we rely on Go's mod cache and not Make's cache.
-#
-CHANGELOG := $(TOOLINGDIR)/bin/changelog
-$(CHANGELOG):
-	GOBIN=$(TOOLINGDIR)/bin go install github.com/gravitational/shared-workflows/tools/changelog@v1.0.0
 
 .PHONY: tooling
 tooling: ensure-gotestsum $(DIFF_TEST)
@@ -992,7 +971,7 @@ FLAKY_TOP_N ?= 20
 FLAKY_SUMMARY_FILE ?= /tmp/flaky-report.txt
 test-go-flaky: FLAGS ?= -race -shuffle on
 test-go-flaky: SUBJECT ?= $(shell go list ./... | grep -v -e e2e -e integration -e tool/tsh -e integrations/operator -e integrations/access -e integrations/lib )
-test-go-flaky: GO_BUILD_TAGS ?= $(PAM_TAG) $(FIPS_TAG) $(BPF_TAG) $(TOUCHID_TAG) $(PIV_TEST_TAG) $(LIBFIDO2_TEST_TAG) $(VNETDAEMON_TAG)
+test-go-flaky: GO_BUILD_TAGS ?= $(PAM_TAG) $(FIPS_TAG) $(BPF_TAG) $(TOUCHID_TAG) $(PIV_TEST_TAG) $(VNETDAEMON_TAG)
 test-go-flaky: RENDER_FLAGS ?= -report-by flakiness -summary-file $(FLAKY_SUMMARY_FILE) -top $(FLAKY_TOP_N)
 test-go-flaky: test-go-prepare $(RENDER_TESTS) $(RERUN)
 	$(CGOFLAG) $(RERUN) -n $(FLAKY_RUNS) -t $(FLAKY_TIMEOUT) \
@@ -1476,7 +1455,6 @@ derive:
 derive-up-to-date: must-start-clean/host derive
 	@if ! git diff --quiet; then \
 		echo 'Please run make derive.'; \
-		git diff; \
 		exit 1; \
 	fi
 
@@ -1512,7 +1490,6 @@ endif
 protos-up-to-date/host: must-start-clean/host grpc/host
 	@if ! git diff --quiet; then \
 		echo 'Please run make grpc.'; \
-		git diff; \
 		exit 1; \
 	fi
 
@@ -1520,7 +1497,6 @@ protos-up-to-date/host: must-start-clean/host grpc/host
 must-start-clean/host:
 	@if ! git diff --quiet; then \
 		echo 'This must be run from a repo with no unstaged commits.'; \
-		git diff; \
 		exit 1; \
 	fi
 
@@ -1530,7 +1506,6 @@ crds-up-to-date: must-start-clean/host
 	$(MAKE) -C integrations/operator manifests
 	@if ! git diff --quiet; then \
 		echo 'Please run make -C integrations/operator manifests.'; \
-		git diff; \
 		exit 1; \
 	fi
 
@@ -1650,26 +1625,6 @@ ensure-webassets-e:
 	@if [[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ]]; then mkdir -p webassets/teleport && mkdir -p webassets/e/teleport/app && cp web/packages/teleport/index.html webassets/e/teleport/index.html; \
 	else MAKE="$(MAKE)" "$(MAKE_DIR)/build.assets/build-webassets-if-changed.sh" Enterprise webassets/e/e-sha build-ui-e web e/web; fi
 
-# Enables the pnpm package manager if it is not already enabled and Corepack
-# is available.
-# We check if pnpm is enabled, as the user may not have permission to
-# enable it, but it may already be available.
-# Enabling it merely installs a shim which then needs to be downloaded before first use.
-# Corepack typically prompts before downloading a package manager. We work around that
-# by issuing a bogus pnpm call with an env var that skips the prompt.
-.PHONY: ensure-js-package-manager
-ensure-js-package-manager:
-	@if [ -z "$$(COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm -v 2>/dev/null)" ]; then \
-		if [ -n "$$(corepack --version 2>/dev/null)" ]; then \
-			echo 'Info: pnpm is not enabled via Corepack. Enabling pnpm…'; \
-			corepack enable pnpm; \
-			echo "pnpm $$(COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm -v)"; \
-		else \
-			echo 'Error: Corepack is not installed, cannot enable pnpm. See the installation guide https://pnpm.io/installation#using-corepack'; \
-			exit 1; \
-		fi; \
-	fi
-
 .PHONY: init-submodules-e
 init-submodules-e:
 	git submodule init e
@@ -1684,15 +1639,15 @@ backport:
 .PHONY: ensure-js-deps
 ensure-js-deps:
 	@if [[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ]]; then mkdir -p webassets/teleport && touch webassets/teleport/index.html; \
-	else $(MAKE) ensure-js-package-manager && pnpm install --frozen-lockfile; fi
+	else yarn install --ignore-scripts; fi
 
 .PHONY: build-ui
 build-ui: ensure-js-deps
-	@[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ] || pnpm build-ui-oss
+	@[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ] || yarn build-ui-oss
 
 .PHONY: build-ui-e
 build-ui-e: ensure-js-deps
-	@[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ] || pnpm build-ui-e
+	@[ "${WEBASSETS_SKIP_BUILD}" -eq 1 ] || yarn build-ui-e
 
 .PHONY: docker-ui
 docker-ui:
@@ -1714,31 +1669,12 @@ rustup-install-target-toolchain: rustup-set-version
 # changelog generates PR changelog between the provided base tag and the tip of
 # the specified branch.
 #
-# usage: make -s changelog
-# usage: make -s changelog BASE_BRANCH=branch/v13 BASE_TAG=13.2.0
-# usage: BASE_BRANCH=branch/v13 BASE_TAG=13.2.0 make -s changelog
+# usage: make changelog
+# usage: make changelog BASE_BRANCH=branch/v13 BASE_TAG=13.2.0
+# usage: BASE_BRANCH=branch/v13 BASE_TAG=13.2.0 make changelog
 #
 # BASE_BRANCH and BASE_TAG will be automatically determined if not specified.
+# See ./build.assets/changelog.sh
 .PHONY: changelog
-changelog: $(CHANGELOG)
-	$(CHANGELOG) --base-branch="$(BASE_BRANCH)" --base-tag="$(BASE_TAG)" ./
-
-# create-github-release will generate release notes from the CHANGELOG.md and will
-# create release notes from them.
-#
-# usage: make create-github-release
-# usage: make create-github-release LATEST=true
-#
-# If it detects that the first version in CHANGELOG.md
-# does not match version set it will fail to create a release. If tag doesn't exist it
-# will also fail to create a release.
-#
-# For more information on release notes generation see ./build.assets/tooling/cmd/release-notes
-.PHONY: create-github-release
-create-github-release: LATEST = false
-create-github-release: $(RELEASE_NOTES_GEN)
-	@NOTES=$$($(RELEASE_NOTES_GEN) $(VERSION) CHANGELOG.md) && gh release create v$(VERSION) \
-	-t "Teleport $(VERSION)" \
-	--latest=$(LATEST) \
-	--verify-tag \
-	-F - <<< "$$NOTES"
+changelog:
+	@BASE_BRANCH=$(BASE_BRANCH) BASE_TAG=$(BASE_TAG) ./build.assets/changelog.sh

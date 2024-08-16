@@ -22,7 +22,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 
 import * as Icons from 'design/Icon';
 
-import Text, { P3 } from 'design/Text';
+import Text from 'design/Text';
 import { ButtonSecondary } from 'design/Button';
 
 import { MenuIcon, MenuItem } from 'shared/components/MenuAction';
@@ -133,18 +133,14 @@ export function Notification({
     // Prevents this from being triggered when the user is just clicking away from
     // an open "mark as read/hide this notification" menu popover.
     if (e.currentTarget.contains(e.target as HTMLElement)) {
-      onClick();
+      if (content.kind === 'text') {
+        setShowTextContentDialog(true);
+        return;
+      }
+      onMarkAsClicked();
+      closeNotificationsList();
+      history.push(content.redirectRoute);
     }
-  }
-
-  function onClick() {
-    if (content.kind === 'text') {
-      setShowTextContentDialog(true);
-      return;
-    }
-    onMarkAsClicked();
-    closeNotificationsList();
-    history.push(content.redirectRoute);
   }
 
   const isClicked =
@@ -157,12 +153,6 @@ export function Notification({
         clicked={isClicked}
         onClick={onNotificationClick}
         className="notification"
-        tabIndex={0}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            onClick();
-          }
-        }}
       >
         <GraphicContainer>
           <MainIconContainer type={content.type}>
@@ -179,21 +169,21 @@ export function Notification({
               <content.QuickAction markAsClicked={onMarkAsClicked} />
             )}
             {hideNotificationAttempt.status === 'error' && (
-              <Text typography="body4" color="error.main">
+              <Text typography="subtitle3" color="error.main">
                 Failed to hide notification:{' '}
                 {hideNotificationAttempt.statusText}
               </Text>
             )}
             {markAsClickedAttempt.status === 'error' && (
-              <P3 color="error.main">
+              <Text typography="subtitle3" color="error.main">
                 Failed to mark notification as read:{' '}
                 {markAsClickedAttempt.statusText}
-              </P3>
+              </Text>
             )}
           </ContentBody>
           <SideContent>
             {!content?.hideDate && (
-              <Text typography="body4">{formattedDate}</Text>
+              <Text typography="subtitle3">{formattedDate}</Text>
             )}
             {!notification.localNotification && (
               <MenuIcon
@@ -260,7 +250,7 @@ function formatDate(date: Date) {
   return `${distance} ago`;
 }
 
-const Container = styled.div<{ clicked?: boolean }>`
+const Container = styled.div`
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -271,40 +261,20 @@ const Container = styled.div<{ clicked?: boolean }>`
   border-radius: ${props => props.theme.radii[3]}px;
   cursor: pointer;
 
-  ${props => getInteractiveStateStyles(props.theme, props.clicked)}
-`;
-
-function getInteractiveStateStyles(theme: Theme, clicked: boolean): string {
-  if (clicked) {
-    return `
-        background: transparent;
-        &:hover {
-          background: ${theme.colors.interactive.tonal.neutral[0].background};
-        }
-        &:active {
-          outline: none;
-          background: ${theme.colors.interactive.tonal.neutral[1].background};
-        }
-        &:focus {
-          outline: ${theme.borders[2]} ${theme.colors.text.slightlyMuted};
-        }
-        `;
+  background: ${props => props.theme.colors.interactive.tonal.primary[0]};
+  &:hover {
+    background: ${props => props.theme.colors.interactive.tonal.primary[1]};
   }
 
-  return `
-    background: ${theme.colors.interactive.tonal.primary[0].background};
+  ${props =>
+    props.clicked &&
+    `
+    background: ${props.theme.colors.interactive.tonal.neutral[0]};
     &:hover {
-      background: ${theme.colors.interactive.tonal.primary[1].background};
+      background: ${props.theme.colors.interactive.tonal.neutral[1]};
     }
-    &:active {
-      outline: none;
-      background: ${theme.colors.interactive.tonal.primary[2].background};
-    }
-    &:focus {
-      outline: ${theme.borders[2]} ${theme.colors.interactive.solid.primary.default.background};
-    }
-    `;
-}
+    `}
+`;
 
 const ContentContainer = styled.div`
   display: flex;
@@ -351,33 +321,33 @@ function getIconColors(
   switch (type) {
     case 'success':
       return {
-        primary: theme.colors.interactive.solid.success.active.background,
-        secondary: theme.colors.interactive.tonal.success[0].background,
+        primary: theme.colors.success.main,
+        secondary: theme.colors.interactive.tonal.success[0],
       };
     case 'success-alt':
       return {
-        primary: theme.colors.interactive.solid.accent.active.background,
-        secondary: theme.colors.interactive.tonal.informational[0].background,
+        primary: theme.colors.accent.main,
+        secondary: theme.colors.interactive.tonal.informational[0],
       };
     case 'informational':
       return {
         primary: theme.colors.brand,
-        secondary: theme.colors.interactive.tonal.primary[0].background,
+        secondary: theme.colors.interactive.tonal.primary[0],
       };
     case `warning`:
       return {
-        primary: theme.colors.interactive.solid.alert.active.background,
-        secondary: theme.colors.interactive.tonal.alert[0].background,
+        primary: theme.colors.warning.main,
+        secondary: theme.colors.interactive.tonal.alert[0],
       };
     case 'failure':
       return {
         primary: theme.colors.error.main,
-        secondary: theme.colors.interactive.tonal.danger[0].background,
+        secondary: theme.colors.interactive.tonal.danger[0],
       };
   }
 }
 
-const MainIconContainer = styled.div<{ type: NotificationContent['type'] }>`
+const MainIconContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,7 +366,7 @@ const MainIconContainer = styled.div<{ type: NotificationContent['type'] }>`
     getIconColors(props.theme, props.type).secondary};
 `;
 
-const AccentIconContainer = styled.div<{ type: NotificationContent['type'] }>`
+const AccentIconContainer = styled.div`
   height: 18px;
   width: 18px;
   display: flex;

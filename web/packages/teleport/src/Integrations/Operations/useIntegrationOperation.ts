@@ -39,6 +39,8 @@ export function useIntegrationOperation() {
     return integrationService.updateIntegration(operation.item.name, {
       awsoidc: {
         roleArn: req.roleArn,
+        issuerS3Bucket: req.s3Bucket,
+        issuerS3Prefix: req.s3Prefix,
       },
     });
   }
@@ -66,6 +68,8 @@ export function useIntegrationOperation() {
  */
 export type EditableIntegrationFields = {
   roleArn: string;
+  s3Bucket: string;
+  s3Prefix: string;
 };
 
 export type OperationType = 'create' | 'edit' | 'delete' | 'reset' | 'none';

@@ -20,8 +20,6 @@ import { useEffect, useRef } from 'react';
 import { ButtonIcon, Flex, Text } from 'design';
 import { Trash, Unlink } from 'design/Icon';
 
-import styled from 'styled-components';
-
 import { ExtendedTrackedConnection } from 'teleterm/ui/services/connectionTracker';
 import { ListItem } from 'teleterm/ui/components/ListItem';
 
@@ -58,18 +56,26 @@ export function ConnectionItem(props: {
   };
 
   const actionIcon = offline ? actionIcons.remove : actionIcons.disconnect;
-  const ref = useRef<HTMLLIElement>();
+  const ref = useRef<HTMLElement>();
 
   useEffect(() => {
     scrollIntoViewIfActive(ref.current);
   }, [scrollIntoViewIfActive]);
 
   return (
-    <ConnectionListItem
+    <ListItem
       onClick={props.activate}
       isActive={isActive}
       ref={ref}
       $showClusterName={props.showClusterName}
+      css={`
+        padding: ${props => props.theme.space[1]}px
+          ${props => props.theme.space[2]}px;
+        // Space out items more if there are two lines of text to show inside a single item.
+        margin-block-start: ${props =>
+          props.$showClusterName ? props.theme.space[1] : 0}px;
+        height: unset;
+      `}
     >
       <ConnectionStatusIndicator
         mr={3}
@@ -90,7 +96,7 @@ export function ConnectionItem(props: {
           `}
         >
           <Text
-            typography="body2"
+            typography="body1"
             bold
             color="text.main"
             title={props.item.title}
@@ -123,7 +129,7 @@ export function ConnectionItem(props: {
           {props.showClusterName && (
             <Text
               color="text.slightlyMuted"
-              typography="body3"
+              typography="body2"
               title={props.item.clusterName}
             >
               {props.item.clusterName}
@@ -141,17 +147,9 @@ export function ConnectionItem(props: {
           <actionIcon.Icon size={18} />
         </ButtonIcon>
       </Flex>
-    </ConnectionListItem>
+    </ListItem>
   );
 }
-
-const ConnectionListItem = styled(ListItem)<{ $showClusterName?: boolean }>`
-  padding: ${props => props.theme.space[1]}px ${props => props.theme.space[2]}px;
-  // Space out items more if there are two lines of text to show inside a single item.
-  margin-block-start: ${props =>
-    props.$showClusterName ? props.theme.space[1] : 0}px;
-  height: unset;
-`;
 
 function getKindName(connection: ExtendedTrackedConnection): string {
   switch (connection.kind) {

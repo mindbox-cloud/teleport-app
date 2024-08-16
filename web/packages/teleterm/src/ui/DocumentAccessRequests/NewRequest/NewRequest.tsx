@@ -19,7 +19,7 @@
 import styled from 'styled-components';
 
 import { Alert, Box, Flex, Link, Text, Indicator } from 'design';
-import { space, SpaceProps, width } from 'design/system';
+import { space, width } from 'design/system';
 import { Info as InfoIcon } from 'design/Icon';
 
 import {
@@ -117,7 +117,7 @@ function Inner(props: { rootCluster: Cluster }) {
   const isRoleList = selectedResource === 'role';
 
   return (
-    <Layout mx="auto" px={5} pt={3} height="100%">
+    <Layout mx="auto" px={5} pt={3} height="100%" flexDirection="column">
       {attempt.status === 'failed' && (
         <Alert kind="danger" children={attempt.statusText} />
       )}
@@ -193,17 +193,13 @@ const Layout = styled(Box)`
   flex: 1;
   max-width: 1248px;
 
-  &::after {
+  ::after {
     content: ' ';
     padding-bottom: 24px;
   }
 `;
 
-interface StyledNavButtonProps extends SpaceProps {
-  active?: boolean;
-}
-
-const StyledNavButton = styled.button<StyledNavButtonProps>(props => {
+const StyledNavButton = styled.button(props => {
   return {
     color: props.active
       ? props.theme.colors.text.main
@@ -251,7 +247,6 @@ function toResourceMap(request: PendingAccessRequest): ResourceMap {
     node: {},
     db: {},
     app: {},
-    saml_idp_service_provider: {},
   };
   if (request.kind === 'role') {
     request.roles.forEach(role => {

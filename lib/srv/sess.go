@@ -263,7 +263,7 @@ func (s *SessionRegistry) TryWriteSudoersFile(ctx *ServerContext) error {
 }
 
 func (s *SessionRegistry) TryCreateHostUser(ctx *ServerContext) error {
-	if !ctx.srv.GetCreateHostUser() || s.users == nil {
+	if !ctx.srv.GetCreateHostUser() {
 		s.log.Debug("Not creating host user: node has disabled host user creation.")
 		return nil // not an error to not be able to create host users
 	}
@@ -2136,7 +2136,17 @@ func (s *session) trackSession(ctx context.Context, teleportUser string, policyS
 		InitialCommand: initialCommand,
 	}
 
-	if invitedUsers := s.scx.env[teleport.EnvSSHSessionInvited]; invitedUsers != "" {
+	invitedUsers := s.scx.env[teleport.EnvSSHSessionInvited]
+
+	// Until Teleport 16, there was a typo that caused EnvSSHSessionInvited to take
+	// on an incorrect value, so we must check both the current and old (incorrect)
+	// environment variable.
+	// TODO(zmb3): DELETE IN 17
+	if invitedUsers == "" {
+		invitedUsers = s.scx.env["TELEPORT_SESSION_JOIN_MODE"]
+	}
+
+	if invitedUsers != "" {
 		if err := json.Unmarshal([]byte(invitedUsers), &trackerSpec.Invited); err != nil {
 			return trace.Wrap(err)
 		}

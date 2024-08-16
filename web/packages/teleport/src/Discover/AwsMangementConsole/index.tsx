@@ -39,7 +39,7 @@ export const AwsMangementConsole: ResourceViewConfig<ResourceSpec> = {
         eventName: DiscoverEvent.IntegrationAWSOIDCConnectEvent,
       },
       {
-        title: 'Create Application Server',
+        title: 'Create Applicaton Server',
         component: CreateAppAccess,
         // TODO(lisa) define a create application aws step
       },

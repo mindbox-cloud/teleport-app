@@ -31,10 +31,10 @@ exports[`failed state 1`] = `
 
 .c1 {
   box-sizing: border-box;
-  padding-top: 4px;
-  padding-bottom: 4px;
   padding-left: 16px;
   padding-right: 16px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   background-color: #0C143D;
 }
 
@@ -66,8 +66,7 @@ exports[`failed state 1`] = `
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -76,49 +75,45 @@ exports[`failed state 1`] = `
   position: relative;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
+  text-transform: uppercase;
+  transition: all 0.3s;
   -webkit-font-smoothing: antialiased;
-  background-color: #9F85FF;
   color: #000000;
-  border-color: transparent;
-  border-width: 1.5px;
-  padding: 0 30.5px;
+  background: #9F85FF;
   min-height: 32px;
   font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-}
-
-.c20:focus-visible,
-.teleport-button__force-focus-visible .c20 {
-  background-color: #9F85FF;
-  color: #000000;
-  border-color: #000000;
-  border-radius: 2px;
-  outline: 2px solid #9F85FF;
+  padding: 0px 24px;
 }
 
 .c20:hover,
-.teleport-button__force-hover .c20 {
-  background-color: #B29DFF;
-  border-color: transparent;
-  color: #000000;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.20),0px 5px 8px 0px rgba(0, 0, 0, 0.14),0px 1px 14px 0px rgba(0, 0, 0, 0.12);
+.c20:focus {
+  background: #B29DFF;
 }
 
-.c20:active,
-.teleport-button__force-active .c20 {
-  background-color: #C5B6FF;
-  border-color: transparent;
-  color: #000000;
+.c20:active {
+  background: #C5B6FF;
 }
 
 .c20:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
   cursor: auto;
+}
+
+.c2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  margin: 0px;
+  margin-right: 16px;
+}
+
+.c15 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0px;
 }
 
 .c17 {
@@ -126,28 +121,7 @@ exports[`failed state 1`] = `
   display: block;
   font-size: 12px;
   width: 100%;
-  margin-bottom: 4px;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-  margin-bottom: 0;
-}
-
-.c2 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  margin-right: 16px;
-}
-
-.c15 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
+  margin-bottom: 0px;
 }
 
 .c6 {
@@ -167,7 +141,7 @@ exports[`failed state 1`] = `
 
 .c18 {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(255,255,255,0.54);
   border-radius: 4px;
   box-sizing: border-box;
   min-height: 50px;
@@ -183,14 +157,14 @@ exports[`failed state 1`] = `
 }
 
 .c18::placeholder {
-  color: rgba(255, 255, 255, 0.54);
+  color: rgba(255,255,255,0.54);
   opacity: 1;
 }
 
 .c18:hover,
 .c18:focus,
 .c18:active {
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255,255,255,0.72);
 }
 
 .c18:read-only {
@@ -198,8 +172,8 @@ exports[`failed state 1`] = `
 }
 
 .c18:disabled {
-  color: rgba(255, 255, 255, 0.36);
-  border-color: rgba(255, 255, 255, 0.36);
+  color: rgba(255,255,255,0.36);
+  border-color: rgba(255,255,255,0.36);
 }
 
 .c7 {
@@ -241,12 +215,12 @@ exports[`failed state 1`] = `
     <div
       class="c1"
     >
-      <h3
+      <div
         class="c2"
       >
         loggedInUsername
          - add a review
-      </h3>
+      </div>
     </div>
     <div
       class="c3"
@@ -326,6 +300,7 @@ exports[`failed state 1`] = `
       >
         <label
           class="c17"
+          font-size="0"
         >
           Message
           <textarea
@@ -337,7 +312,7 @@ exports[`failed state 1`] = `
       </div>
       <button
         class="c20"
-        fill="filled"
+        kind="primary"
       >
         Submit Review
       </button>
@@ -356,10 +331,10 @@ exports[`loaded state 1`] = `
 
 .c1 {
   box-sizing: border-box;
-  padding-top: 4px;
-  padding-bottom: 4px;
   padding-left: 16px;
   padding-right: 16px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   background-color: #0C143D;
 }
 
@@ -391,8 +366,7 @@ exports[`loaded state 1`] = `
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  border-style: solid;
-  border-color: transparent;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -401,49 +375,45 @@ exports[`loaded state 1`] = `
   position: relative;
   text-align: center;
   text-decoration: none;
-  transition: background-color 0.1s,border-color 0.1s,outline-color 0.1s,box-shadow 0.1s;
+  text-transform: uppercase;
+  transition: all 0.3s;
   -webkit-font-smoothing: antialiased;
-  background-color: #9F85FF;
   color: #000000;
-  border-color: transparent;
-  border-width: 1.5px;
-  padding: 0 30.5px;
+  background: #9F85FF;
   min-height: 32px;
   font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.15px;
-}
-
-.c19:focus-visible,
-.teleport-button__force-focus-visible .c19 {
-  background-color: #9F85FF;
-  color: #000000;
-  border-color: #000000;
-  border-radius: 2px;
-  outline: 2px solid #9F85FF;
+  padding: 0px 24px;
 }
 
 .c19:hover,
-.teleport-button__force-hover .c19 {
-  background-color: #B29DFF;
-  border-color: transparent;
-  color: #000000;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.20),0px 5px 8px 0px rgba(0, 0, 0, 0.14),0px 1px 14px 0px rgba(0, 0, 0, 0.12);
+.c19:focus {
+  background: #B29DFF;
 }
 
-.c19:active,
-.teleport-button__force-active .c19 {
-  background-color: #C5B6FF;
-  border-color: transparent;
-  color: #000000;
+.c19:active {
+  background: #C5B6FF;
 }
 
 .c19:disabled {
-  background-color: rgba(255,255,255,0.07);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: transparent;
-  box-shadow: none;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.3);
   cursor: auto;
+}
+
+.c2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  margin: 0px;
+  margin-right: 16px;
+}
+
+.c14 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0px;
 }
 
 .c16 {
@@ -451,28 +421,7 @@ exports[`loaded state 1`] = `
   display: block;
   font-size: 12px;
   width: 100%;
-  margin-bottom: 4px;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.015px;
-  margin-bottom: 0;
-}
-
-.c2 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  margin-right: 16px;
-}
-
-.c14 {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
+  margin-bottom: 0px;
 }
 
 .c5 {
@@ -492,7 +441,7 @@ exports[`loaded state 1`] = `
 
 .c17 {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(255,255,255,0.54);
   border-radius: 4px;
   box-sizing: border-box;
   min-height: 50px;
@@ -508,14 +457,14 @@ exports[`loaded state 1`] = `
 }
 
 .c17::placeholder {
-  color: rgba(255, 255, 255, 0.54);
+  color: rgba(255,255,255,0.54);
   opacity: 1;
 }
 
 .c17:hover,
 .c17:focus,
 .c17:active {
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255,255,255,0.72);
 }
 
 .c17:read-only {
@@ -523,8 +472,8 @@ exports[`loaded state 1`] = `
 }
 
 .c17:disabled {
-  color: rgba(255, 255, 255, 0.36);
-  border-color: rgba(255, 255, 255, 0.36);
+  color: rgba(255,255,255,0.36);
+  border-color: rgba(255,255,255,0.36);
 }
 
 .c6 {
@@ -566,12 +515,12 @@ exports[`loaded state 1`] = `
     <div
       class="c1"
     >
-      <h3
+      <div
         class="c2"
       >
         loggedInUsername
          - add a review
-      </h3>
+      </div>
     </div>
     <div
       class="c3"
@@ -645,6 +594,7 @@ exports[`loaded state 1`] = `
       >
         <label
           class="c16"
+          font-size="0"
         >
           Message
           <textarea
@@ -656,7 +606,7 @@ exports[`loaded state 1`] = `
       </div>
       <button
         class="c19"
-        fill="filled"
+        kind="primary"
       >
         Submit Review
       </button>

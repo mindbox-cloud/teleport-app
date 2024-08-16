@@ -197,7 +197,7 @@ func TestUpdate(t *testing.T) {
 	}
 	wantConfig.AuthInfos[clusterName] = &clientcmdapi.AuthInfo{
 		ClientCertificateData: creds.TLSCert,
-		ClientKeyData:         creds.PrivateKey.PrivateKeyPEM(),
+		ClientKeyData:         creds.PrivateKeyPEM(),
 		LocationOfOrigin:      kubeconfigPath,
 		Extensions:            map[string]runtime.Object{},
 	}
@@ -551,7 +551,7 @@ func TestRemoveByServerAddr(t *testing.T) {
 	require.Equal(t, wantConfig, config)
 }
 
-func genUserKey(hostname string) (*client.KeyRing, []byte, error) {
+func genUserKey(hostname string) (*client.Key, []byte, error) {
 	caKey, caCert, err := tlsca.GenerateSelfSignedCA(pkix.Name{
 		CommonName:   hostname,
 		Organization: []string{hostname},
@@ -583,7 +583,7 @@ func genUserKey(hostname string) (*client.KeyRing, []byte, error) {
 		return nil, nil, trace.Wrap(err)
 	}
 
-	return &client.KeyRing{
+	return &client.Key{
 		PrivateKey: priv,
 		TLSCert:    tlsCert,
 		TrustedCerts: []authclient.TrustedCerts{{

@@ -42,7 +42,6 @@ func TestBaseUser(t *testing.T) {
 		Client: libsecrets.NewMockSecretsManagerClient(libsecrets.MockSecretsManagerClientConfig{
 			Clock: clock,
 		}),
-		ClusterName: "example.teleport.sh",
 	})
 	require.NoError(t, err)
 

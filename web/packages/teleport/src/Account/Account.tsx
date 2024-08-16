@@ -17,7 +17,7 @@
  */
 
 import React, { useState } from 'react';
-import { Box, Flex, H2, Indicator, Subtitle2 } from 'design';
+import { Box, Flex, Indicator, Text } from 'design';
 import styled, { useTheme } from 'styled-components';
 import { Attempt } from 'shared/hooks/useAttemptNext';
 import * as Icon from 'design/Icon';
@@ -229,7 +229,7 @@ export function Account({
               header={
                 <Header
                   title={
-                    <Flex gap={2} alignItems="center">
+                    <Flex gap={2}>
                       Multi-factor Authentication
                       <StatePill
                         data-testid="mfa-state-pill"
@@ -348,7 +348,7 @@ function PasskeysHeader({
     return (
       <Flex flexDirection="column" alignItems="center">
         <Box
-          bg={theme.colors.interactive.tonal.neutral[0].background}
+          bg={theme.colors.interactive.tonal.neutral[0]}
           lineHeight={0}
           p={2}
           borderRadius={3}
@@ -356,15 +356,16 @@ function PasskeysHeader({
         >
           <Icon.Key />
         </Box>
-        <H2 mb={1}>Passwordless sign-in using Passkeys</H2>
-        <Subtitle2
+        <Text typography="h4">Passwordless sign-in using Passkeys</Text>
+        <Text
+          typography="body1"
           color={theme.colors.text.slightlyMuted}
           textAlign="center"
           mb={3}
         >
           Passkeys are a password replacement that validates your identity using
           touch, facial recognition, a device password, or a PIN.
-        </Subtitle2>
+        </Text>
         <RelativeBox>
           {fetchDevicesAttempt.status === 'processing' && (
             // This trick allows us to maintain center alignment of the button
@@ -382,7 +383,7 @@ function PasskeysHeader({
   return (
     <Header
       title={
-        <Flex gap={2} alignItems="center">
+        <Flex gap={2}>
           Passkeys
           <StatePill
             data-testid="passwordless-state-pill"

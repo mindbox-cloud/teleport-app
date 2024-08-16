@@ -18,7 +18,7 @@
 
 import React from 'react';
 import * as Alerts from 'design/Alert';
-import { ButtonIcon, Text, Indicator, Box, H2 } from 'design';
+import { ButtonIcon, Text, Indicator, Box } from 'design';
 import * as Icons from 'design/Icon';
 import { DialogHeader, DialogContent } from 'design/Dialog';
 import { PrimaryAuthType } from 'shared/services';
@@ -58,9 +58,9 @@ export function ClusterLoginPresentation({
   return (
     <>
       <DialogHeader px={4} pt={4} mb={0}>
-        <H2>
+        <Text typography="h4">
           Login to <b>{title}</b>
-        </H2>
+        </Text>
         <ButtonIcon ml="auto" p={3} onClick={onCloseDialog} aria-label="Close">
           <Icons.Cross size="medium" />
         </ButtonIcon>
